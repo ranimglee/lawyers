@@ -59,30 +59,6 @@ Jurist-backend/
 │
 └── pom.xml               # Dépendances Maven
 
-⚙️ Prérequis
-
-Avant de démarrer le projet, assure-toi d’avoir :
-
-Java 17+ ou Corretto 21
-
-Maven 3.8+
-
-PostgreSQL (ou une autre base compatible JPA)
-
-Lombok activé dans ton IDE (par exemple IntelliJ → Settings → Plugins → Lombok)
-
-🧩 Configuration
-🗂️ application.properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/juristdb
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-jwt.secret=your_secret_key
-jwt.expiration=86400000
-
 ▶️ Lancer l’application
 1️⃣ Cloner le projet
 git clone https://github.com/your-username/jurist-backend.git
@@ -96,38 +72,7 @@ mvn spring-boot:run
 Le backend sera disponible sur :
 👉 http://localhost:8080
 
-🧠 Endpoints principaux
-Méthode	Endpoint	Description
-POST	/api/auth/login	Authentification de l’admin
-GET	/api/avocats	Liste des avocats
-POST	/api/affaires	Créer une nouvelle affaire
-PUT	/api/affaires/{id}	Modifier une affaire
-POST	/api/assign	Assigner automatiquement une affaire à un avocat
-GET	/api/notifications	Lister les notifications envoyées
-🧰 Dépendances principales
 
-Spring Boot Starter Web
-
-Spring Boot Starter Security
-
-Spring Boot Starter Data JPA
-
-JJWT (io.jsonwebtoken)
-
-PostgreSQL Driver
-
-Lombok
-
-Spring Mail (pour les emails)
-
-🧾 Notes techniques
-
-Les méthodes signWith() et parser() de io.jsonwebtoken sont dépréciées :
-utilise plutôt la version moderne avec Jwts.parserBuilder() et signWith(Key, SignatureAlgorithm).
-
-Active Annotation Processing dans ton IDE pour éviter les erreurs Lombok :
-
-IntelliJ : File → Settings → Build, Execution, Deployment → Compiler → Annotation Processors → Enable.
 
 🧑‍💻 Auteur
 
