@@ -29,8 +29,8 @@ public class AvocatService {
                 .telephone(request.getTelephone())
                 .region(request.getRegion())
                 .adresse(request.getAdresse())
-                .dateInscription(LocalDate.now())
-                .lastAssignedAt(LocalDateTime.now().minusDays(1))
+                .dateInscription(request.getDateInscription())
+
                 .build();
 
         Avocat saved = avocatRepository.save(avocat);
