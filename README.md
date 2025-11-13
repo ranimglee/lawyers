@@ -46,9 +46,6 @@ Recherche et filtrage.
 
 ▶️ Lancer l’application
 1️⃣ Cloner le projet
-git clone https://github.com/your-username/jurist-backend.git
-cd jurist-backend
-
 2️⃣ Compiler et exécuter
 mvn clean install
 mvn spring-boot:run
