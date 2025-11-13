@@ -1,0 +1,39 @@
+package com.onat.jurist.lawyer.service;
+
+import com.onat.jurist.lawyer.entity.Affaire;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+
+@Service
+public class EmailService {
+
+
+    private final JavaMailSender mailSender;
+
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+
+    public boolean sendAssignmentEmail(String to, Affaire affaire) {
+        try {
+            SimpleMailMessage msg = new SimpleMailMessage();
+            msg.setTo(to);
+            msg.setSubject("Nouvelle affaire assignée : " + affaire.getTitre());
+            String text = "Bonjour,\n\nUne nouvelle affaire vous a été proposée.\n\nNumero: " + affaire.getNumero()
+                    + "\nTitre: " + affaire.getTitre()
+                    + "\nType: " + affaire.getType()
+                    + "\nDate tribunal: " + affaire.getDateTribunal()
+                    + "\n\nMerci de répondre via le lien ou par e-mail.\n";
+            msg.setText(text);
+            mailSender.send(msg);
+            return true;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+}

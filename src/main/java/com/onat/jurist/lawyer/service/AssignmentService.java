@@ -1,0 +1,90 @@
+package com.onat.jurist.lawyer.service;
+
+import com.onat.jurist.lawyer.entity.Affaire;
+import com.onat.jurist.lawyer.entity.Avocat;
+import com.onat.jurist.lawyer.entity.EmailNotification;
+import com.onat.jurist.lawyer.repository.AffaireRepository;
+import com.onat.jurist.lawyer.repository.AvocatRepository;
+import com.onat.jurist.lawyer.repository.EmailNotificationRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+
+@Service
+public class AssignmentService {
+    private final AvocatRepository avocatRepository;
+    private final AffaireRepository affaireRepository;
+    private final EmailService emailService;
+    private final EmailNotificationRepository emailNotificationRepository;
+
+
+    public AssignmentService(AvocatRepository avocatRepository,
+                             AffaireRepository affaireRepository,
+                             EmailService emailService,
+                             EmailNotificationRepository emailNotificationRepository) {
+        this.avocatRepository = avocatRepository;
+        this.affaireRepository = affaireRepository;
+        this.emailService = emailService;
+        this.emailNotificationRepository = emailNotificationRepository;
+    }
+
+
+@Transactional
+public void assignAutomatically(Long affaireId) {
+    Affaire affaire = affaireRepository.findById(affaireId)
+            .orElseThrow(() -> new IllegalArgumentException("Affaire not found"));
+
+
+    List<Avocat> all = avocatRepository.findAll();
+
+
+// Sort by: 1) recent sign-up (dateInscription desc)
+// 2) fewer ongoing cases (affairesEnCours asc)
+// 3) least recently assigned (lastAssignedAt asc)
+
+
+    all.sort(Comparator
+            .comparing(Avocat::getDateInscription, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(Avocat::getAffairesEnCours)
+            .thenComparing(Avocat::getLastAssignedAt, Comparator.nullsFirst(Comparator.naturalOrder())));
+
+
+    if (all.isEmpty()) throw new IllegalStateException("No lawyers available");
+
+
+    Avocat chosen = all.get(0);
+
+
+// assign
+    affaire.setAvocatAssigne(chosen);
+    affaire.setStatut(com.onat.jurist.lawyer.entity.StatutAffaire.EN_COURS);
+    affaireRepository.save(affaire);
+
+
+// update chosen counters
+    chosen.setAffairesEnCours(chosen.getAffairesEnCours() + 1);
+    chosen.setLastAssignedAt(LocalDateTime.now());
+    avocatRepository.save(chosen);
+
+
+// send email and log
+    boolean mailOk = emailService.sendAssignmentEmail(chosen.getEmail(), affaire);
+
+
+    EmailNotification notification = EmailNotification.builder()
+            .recipientEmail(chosen.getEmail())
+            .subject("Affaire assignée: " + affaire.getTitre())
+            .content("Affaire #" + affaire.getNumero())
+            .success(mailOk)
+            .sentAt(LocalDateTime.now())
+            .affaire(affaire)
+            .accepted(null)
+            .build();
+
+
+    emailNotificationRepository.save(notification);
+}
+}

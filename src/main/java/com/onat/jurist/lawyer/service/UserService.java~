@@ -1,0 +1,36 @@
+package com.onat.jurist.lawyer.service;
+
+import com.onat.jurist.lawyer.entity.User;
+import com.onat.jurist.lawyer.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+
+public class UserService {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public User createAdmin(String email, String rawPassword) {
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("User already exists");
+        }
+        User user = User.builder()
+                .email(email)
+                .password(passwordEncoder.encode(rawPassword))
+                .role("ADMIN")
+                .build();
+        return userRepository.save(user);
+    }
+
+    public boolean checkPassword(User user, String rawPassword) {
+        return passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+}

@@ -1,0 +1,4 @@
+package com.onat.jurist.lawyer.controller;
+
+public class AuthController {
+}
