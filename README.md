@@ -42,22 +42,7 @@ Visualisation globale des avocats et affaires.
 
 Recherche et filtrage.
 
-🏗️ Architecture du projet
-Jurist-backend/
-│
-├── src/main/java/com/onat/jurist/lawyer/
-│   ├── controller/        # Contrôleurs REST
-│   ├── entity/            # Entités JPA
-│   ├── repository/        # DAO avec Spring Data JPA
-│   ├── service/           # Services métier
-│   ├── security/          # Configurations JWT et Spring Security
-│   └── dto/               # Objets de transfert de données
-│
-├── src/main/resources/
-│   ├── application.properties  # Configuration de la base de données et du serveur
-│   └── templates/ (si emails)
-│
-└── pom.xml               # Dépendances Maven
+
 
 ▶️ Lancer l’application
 1️⃣ Cloner le projet
