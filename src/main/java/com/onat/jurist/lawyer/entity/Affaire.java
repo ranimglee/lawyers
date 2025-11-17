@@ -1,8 +1,13 @@
 package com.onat.jurist.lawyer.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.context.annotation.Lazy;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "affaires")
@@ -27,17 +32,21 @@ public class Affaire {
 
     private String nomAccuse;
 
-    private LocalDateTime dateCreation = LocalDateTime.now();
+    private LocalDateTime dateCreation;
 
     private LocalDateTime dateTribunal ;
 
 
     @ManyToOne
+    @JsonBackReference
+    @JsonIgnore
     private Avocat avocatAssigne;
 
     @Enumerated(EnumType.STRING)
-    private StatutAffaire statut = StatutAffaire.EN_ATTENTE;
+    private StatutAffaire statut ;
 
 
-
+    @OneToMany(mappedBy = "affaire", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<EmailNotification> notifications;
 }

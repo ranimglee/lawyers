@@ -1,11 +1,14 @@
 package com.onat.jurist.lawyer.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "avocats")
@@ -36,8 +39,9 @@ public class Avocat {
     private int affairesAcceptees = 0;
     private int affairesRefusees = 0;
     private int affairesEnCours = 0;
+    private LocalDateTime lastAssignedAt;
 
-
-   private LocalDateTime lastAssignedAt;
-
+    @OneToMany(mappedBy = "avocatAssigne", cascade = CascadeType.PERSIST, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Affaire> affaires = new ArrayList<>();
 }

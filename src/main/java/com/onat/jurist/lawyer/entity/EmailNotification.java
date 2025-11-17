@@ -19,12 +19,20 @@ public class EmailNotification {
 
     private String recipientEmail;
     private String subject;
+    @Column(columnDefinition = "TEXT")
     private String content;
     private boolean success;
-    private LocalDateTime sentAt = LocalDateTime.now();
+    private LocalDateTime sentAt;
 
     @ManyToOne
     private Affaire affaire;
 
     private Boolean accepted;  // true if lawyer accepted, false if declined
+
+    @Column(unique = true, length = 64)
+    private String actionToken;
+
+    private LocalDateTime tokenExpiry;
+
+    private LocalDateTime respondedAt;
 }

@@ -1,0 +1,63 @@
+package com.onat.jurist.lawyer.controller;
+
+import com.onat.jurist.lawyer.dto.in.AffaireRequestDTO;
+import com.onat.jurist.lawyer.dto.out.AffaireResponseDTO;
+import com.onat.jurist.lawyer.entity.Affaire;
+import com.onat.jurist.lawyer.repository.AffaireRepository;
+import com.onat.jurist.lawyer.service.AffaireService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.ui.Model;
+
+import jakarta.validation.Valid;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/affaires")
+@RequiredArgsConstructor
+public class AffaireController {
+
+    private final AffaireService affaireService;
+    private final AffaireRepository affaireRepository;
+
+    // Create a new affaire
+    @PostMapping
+    public ResponseEntity<AffaireResponseDTO> createAffaire(@Valid @RequestBody AffaireRequestDTO dto) {
+        return new ResponseEntity<>(affaireService.createAffaire(dto), HttpStatus.CREATED);
+    }
+
+    // Get all affaires
+    @GetMapping
+    public ResponseEntity<List<AffaireResponseDTO>> getAllAffaires() {
+        return ResponseEntity.ok(affaireService.getAllAffaires());
+    }
+
+    // Get affaire by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<AffaireResponseDTO> getAffaire(@PathVariable Long id) {
+        return ResponseEntity.ok(affaireService.getAffaireById(id));
+    }
+
+    // Update affaire by ID
+    @PutMapping("/{id}")
+    public ResponseEntity<AffaireResponseDTO> updateAffaire(@PathVariable Long id,
+                                                            @Valid @RequestBody AffaireRequestDTO dto) {
+        return ResponseEntity.ok(affaireService.updateAffaire(id, dto));
+    }
+
+    // Delete affaire by ID
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAffaire(@PathVariable Long id) {
+        affaireService.deleteAffaire(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{avocatId}/affaires")
+    public List<Affaire> getAffaires(@PathVariable Long avocatId) {
+        return affaireService.getAffairesByAvocat(avocatId);
+    }
+
+}
