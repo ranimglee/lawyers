@@ -27,7 +27,7 @@ public class EmailNotification {
     @ManyToOne
     private Affaire affaire;
 
-    private Boolean accepted;  // true if lawyer accepted, false if declined
+    private boolean accepted;
 
     @Column(unique = true, length = 64)
     private String actionToken;
@@ -35,4 +35,7 @@ public class EmailNotification {
     private LocalDateTime tokenExpiry;
 
     private LocalDateTime respondedAt;
+
+    @ManyToOne
+    private Avocat avocat;
 }

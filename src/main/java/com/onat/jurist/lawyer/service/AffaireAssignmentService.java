@@ -5,6 +5,8 @@ import com.onat.jurist.lawyer.entity.Avocat;
 import com.onat.jurist.lawyer.repository.AffaireRepository;
 import com.onat.jurist.lawyer.repository.AvocatRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,11 +15,11 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AffaireAssignmentService {
+    private static final Logger log = LoggerFactory.getLogger(AffaireAssignmentService.class);
 
     private final AvocatRepository avocatRepository;
     private final EmailNotificationService emailService;
@@ -25,48 +27,46 @@ public class AffaireAssignmentService {
 
     @Transactional
     public Optional<Avocat> assignBestLawyer(Affaire affaire) {
-// 1. Priorité: si accusé X a déjà affaire -> même avocat
-        Optional<Avocat> prior = getExistingLawyerForAccuse(affaire.getNomAccuse());
-        if (prior.isPresent()) {
-            Avocat a = prior.get();
-            affaire.setAvocatAssigne(a);
-            affaireRepository.save(affaire);
-            emailService.sendAssignmentEmail(a, affaire);
-            return Optional.of(a);
-        }
+        log.info("📝 Starting assignment for affaire '{}'", affaire.getTitre());
 
+        // Collect lawyers who already refused this affaire
+        List<Long> refusedIds = Optional.ofNullable(affaire.getNotifications())
+                .orElse(List.of())
+                .stream()
+                .filter(e -> Boolean.FALSE.equals(e.isAccepted()) && e.getAvocat() != null)
+                .map(e -> e.getAvocat().getId())
+                .toList();
 
-// 2. récupérer tous les avocats
+        log.info("🚫 Lawyers who refused affaire '{}': {}", affaire.getTitre(), refusedIds);
+
         List<Avocat> list = avocatRepository.findAll();
 
-
-// 3. trier selon: affairesEnCours asc, hasThisMonthAssignment (false before true), dateInscription desc (newer first), lastAssignedAt asc
         List<Avocat> sorted = list.stream()
+                .filter(a -> !refusedIds.contains(a.getId())) // skip refused
                 .sorted(Comparator
                         .comparingInt(Avocat::getAffairesEnCours)
-                        .thenComparing((Avocat a) -> hasThisMonthAssignment(a) ? 1 : 0)
+                        .thenComparing(a -> hasThisMonthAssignment(a) ? 1 : 0)
                         .thenComparing(Avocat::getDateInscription, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(a -> a.getLastAssignedAt() == null ? LocalDateTime.MIN : a.getLastAssignedAt())
                 )
-                .collect(Collectors.toList());
+                .toList();
 
-
-        if (sorted.isEmpty()) return Optional.empty();
-
+        if (sorted.isEmpty()) {
+            log.warn("⚠️ No available lawyers for affaire '{}'", affaire.getTitre());
+            return Optional.empty();
+        }
 
         Avocat chosen = sorted.get(0);
         affaire.setAvocatAssigne(chosen);
         affaireRepository.save(affaire);
 
-
-// update lastAssignedAt (not increment counters until accept)
         chosen.setLastAssignedAt(LocalDateTime.now());
         avocatRepository.save(chosen);
 
-
-// send email
         emailService.sendAssignmentEmail(chosen, affaire);
 
+        log.info("✅ Lawyer '{}' assigned to affaire '{}'", chosen.getNom(), affaire.getTitre());
+        log.info("📅 Lawyer '{}' last assigned at {}", chosen.getNom(), chosen.getLastAssignedAt());
 
         return Optional.of(chosen);
     }
@@ -75,7 +75,6 @@ public class AffaireAssignmentService {
         return affaireRepository.findFirstByNomAccuse(nomAccuse)
                 .map(Affaire::getAvocatAssigne);
     }
-
 
     private boolean hasThisMonthAssignment(Avocat avocat) {
         if (avocat.getLastAssignedAt() == null) return false;

@@ -8,6 +8,8 @@ import com.onat.jurist.lawyer.repository.AffaireRepository;
 import com.onat.jurist.lawyer.repository.AvocatRepository;
 import com.onat.jurist.lawyer.repository.EmailNotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,56 +21,74 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AcceptanceService {
 
+    private static final Logger log = LoggerFactory.getLogger(AcceptanceService.class);
+
     private final AffaireRepository affaireRepository;
     private final AvocatRepository avocatRepository;
     private final EmailNotificationRepository emailRepo;
     private final AffaireAssignmentService assignmentService;
 
     public void acceptAffaire(Long affaireId, Long avocatId) {
-    Affaire affaire = affaireRepository.findById(affaireId)
-            .orElseThrow(() -> new IllegalArgumentException("Affaire not found"));
-    Avocat avocat = avocatRepository.findById(avocatId)
-            .orElseThrow(() -> new IllegalArgumentException("Avocat not found"));
+        Affaire affaire = affaireRepository.findById(affaireId)
+                .orElseThrow(() -> new IllegalArgumentException("Affaire not found"));
+        Avocat avocat = avocatRepository.findById(avocatId)
+                .orElseThrow(() -> new IllegalArgumentException("Avocat not found"));
 
+        if (affaire.getAvocatAssigne() == null || !affaire.getAvocatAssigne().getId().equals(avocatId)) {
+            log.warn("⚠️ Lawyer {} tried to accept affaire {} but is not the assignee", avocatId, affaireId);
+            throw new IllegalStateException("You are not the current assignee of this affaire");
+        }
 
-    if (affaire.getAvocatAssigne() == null || !affaire.getAvocatAssigne().getId().equals(avocatId)) {
-        throw new IllegalStateException("You are not the current assignee of this affaire");
+        affaire.setStatut(StatutAffaire.ACCEPTEE);
+        affaireRepository.save(affaire);
+        log.info("✅ Affaire {} accepted by lawyer {} ({})", affaireId, avocat.getPrenom(), avocat.getNom());
+
+        avocat.setAffairesEnCours(avocat.getAffairesEnCours() + 1);
+        avocat.setAffairesAcceptees(avocat.getAffairesAcceptees() + 1);
+        avocatRepository.save(avocat);
+        log.info("📈 Lawyer {} now has {} ongoing affaires and {} accepted affaires", avocatId,
+                avocat.getAffairesEnCours(), avocat.getAffairesAcceptees());
+
+        List<EmailNotification> emails = emailRepo.findAll();
+        emails.stream()
+                .filter(e -> e.getAffaire() != null && e.getAffaire().getId().equals(affaireId))
+                .forEach(e -> {
+                    e.setAccepted(true);
+                    emailRepo.save(e);
+                    log.info("✉️ Notification {} marked as accepted for affaire {}", e.getId(), affaireId);
+                });
     }
 
-    affaire.setStatut(StatutAffaire.ACCEPTEE);
-    affaireRepository.save(affaire);
+    @Transactional
+    public void refuseAffaire(Long affaireId, Long avocatId) {
+        Affaire affaire = affaireRepository.findById(affaireId)
+                .orElseThrow(() -> new IllegalArgumentException("Affaire not found"));
+        Avocat avocat = avocatRepository.findById(avocatId)
+                .orElseThrow(() -> new IllegalArgumentException("Avocat not found"));
 
+        if (affaire.getAvocatAssigne() == null || !affaire.getAvocatAssigne().getId().equals(avocatId)) {
+            throw new IllegalStateException("You are not the current assignee of this affaire");
+        }
 
-    avocat.setAffairesEnCours(avocat.getAffairesEnCours() + 1);
-    avocat.setAffairesAcceptees(avocat.getAffairesAcceptees() + 1);
-    avocatRepository.save(avocat);
+        // Mark refusal in notifications and store the lawyer
+        List<EmailNotification> emails = Optional.ofNullable(affaire.getNotifications()).orElse(List.of());
+        emails.stream()
+                .filter(e -> e.getAffaire() != null && e.getAffaire().getId().equals(affaireId))
+                .forEach(e -> {
+                    e.setAccepted(false);
+                    e.setAvocat(avocat); // save who refused
+                    emailRepo.save(e);
+                    log.info("✉️ Notification {} marked as refused for affaire {}", e.getId(), affaireId);
+                });
 
-    List<EmailNotification> emails = emailRepo.findAll();
-    emails.stream()
-            .filter(e -> e.getAffaire() != null && e.getAffaire().getId().equals(affaireId))
-            .forEach(e -> { e.setAccepted(true); emailRepo.save(e); });
-}
+        // Clear the assigned lawyer
+        affaire.setAvocatAssigne(null);
+        avocat.setAffairesRefusees(avocat.getAffairesRefusees() + 1);
+        affaireRepository.save(affaire);
+        log.info("❌ Lawyer {} refused affaire {}. Total refused affaires: {}", avocatId, affaireId, avocat.getAffairesRefusees());
 
-
-@Transactional
-public void refuseAffaire(Long affaireId, Long avocatId) {
-    Affaire affaire = affaireRepository.findById(affaireId)
-            .orElseThrow(() -> new IllegalArgumentException("Affaire not found"));
-
-    if (affaire.getAvocatAssigne() == null || !affaire.getAvocatAssigne().getId().equals(avocatId)) {
-        throw new IllegalStateException("You are not the current assignee of this affaire");
-    }
-
-    List<EmailNotification> emails = emailRepo.findAll();
-    emails.stream()
-            .filter(e -> e.getAffaire() != null && e.getAffaire().getId().equals(affaireId))
-            .forEach(e -> { e.setAccepted(false); emailRepo.save(e); });
-
-    affaire.setAvocatAssigne(null);
-    affaireRepository.save(affaire);
-
-
-    assignmentService.assignBestLawyer(affaire);
+        // Assign next best lawyer
+        assignmentService.assignBestLawyer(affaire);
     }
 
     /**
@@ -76,23 +96,34 @@ public void refuseAffaire(Long affaireId, Long avocatId) {
      */
     public boolean verifyToken(Long affaireId, String token) {
         Optional<EmailNotification> emailOpt = emailRepo.findByActionToken(token);
-
-        if (emailOpt.isEmpty()) return false;
+        if (emailOpt.isEmpty()) {
+            log.warn("❌ Token {} not found for affaire {}", token, affaireId);
+            return false;
+        }
 
         EmailNotification email = emailOpt.get();
 
-        // Vérifier que le token correspond à l'affaire
-        if (!email.getAffaire().getId().equals(affaireId)) return false;
+        if (!email.getAffaire().getId().equals(affaireId)) {
+            log.warn("❌ Token {} does not match affaire {}", token, affaireId);
+            return false;
+        }
 
-        // Vérifier que le token n'est pas expiré
-        return email.getTokenExpiry().isAfter(LocalDateTime.now());
+        boolean valid = email.getTokenExpiry().isAfter(LocalDateTime.now());
+        log.info(valid ? "✅ Token {} verified for affaire {}" : "❌ Token {} expired for affaire {}", token, affaireId, token);
+        return valid;
     }
 
-    /**
-     * Récupère l'ID de l'avocat à partir du token
-     */
     public Long getAvocatIdFromToken(String token) {
         Optional<EmailNotification> emailOpt = emailRepo.findByActionToken(token);
-        return emailOpt.map(e -> e.getAffaire().getAvocatAssigne().getId()).orElse(null);
+        Long avocatId = emailOpt.map(e -> e.getAffaire().getAvocatAssigne().getId()).orElse(null);
+
+        if (avocatId != null) {
+            log.info("🔑 Token {} corresponds to lawyer {}", token, avocatId);
+        } else {
+            log.warn("❌ Token {} has no assigned lawyer", token);
+        }
+
+        return avocatId;
     }
+
 }

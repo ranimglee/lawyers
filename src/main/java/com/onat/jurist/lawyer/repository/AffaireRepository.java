@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface AffaireRepository extends JpaRepository<Affaire, Long> {
     boolean existsByNumero(String numero);
+    @Query("SELECT a FROM Affaire a LEFT JOIN FETCH a.notifications WHERE a.id = :id")
+    Optional<Affaire> findByIdWithNotifications(@Param("id") Long id);
 
     Optional<Affaire> findFirstByNomAccuse(String nomAccuse);
 

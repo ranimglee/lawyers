@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.context.annotation.Lazy;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -48,5 +48,7 @@ public class Affaire {
 
     @OneToMany(mappedBy = "affaire", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<EmailNotification> notifications;
+    private List<EmailNotification> notifications = new ArrayList<>();
+
+
 }
