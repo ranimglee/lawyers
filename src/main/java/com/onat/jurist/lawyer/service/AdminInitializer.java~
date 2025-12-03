@@ -1,0 +1,51 @@
+package com.onat.jurist.lawyer.service;
+
+import com.onat.jurist.lawyer.entity.User;
+import com.onat.jurist.lawyer.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class AdminInitializer implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminInitializer.class);
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder encoder;
+
+    @Value("${app.admin.email}")
+    private String adminEmail;
+
+    @Value("${app.admin.password}")
+    private String adminPassword;
+
+    @Override
+    public void run(String... args) {
+
+        if (adminEmail == null || adminEmail.trim().isEmpty()) {
+            log.error("Admin email is not configured!");
+            return;
+        }
+
+        if (!userRepository.findByEmail(adminEmail).isPresent()) {
+
+            User admin = User.builder()
+                    .email(adminEmail)
+                    .password(encoder.encode(adminPassword))
+                    .role("ADMIN")
+                    .build();
+
+            userRepository.save(admin);
+
+            log.info("Default admin user created successfully.");
+        } else {
+            log.info("Admin user already exists.");
+        }
+    }
+}

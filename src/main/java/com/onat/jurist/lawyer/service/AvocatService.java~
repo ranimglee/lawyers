@@ -1,0 +1,295 @@
+package com.onat.jurist.lawyer.service;
+
+import com.lowagie.text.*;
+import com.lowagie.text.pdf.*;
+import com.onat.jurist.lawyer.dto.in.AvocatRequest;
+import com.onat.jurist.lawyer.dto.out.AvocatResponse;
+
+import com.onat.jurist.lawyer.entity.Avocat;
+import com.onat.jurist.lawyer.exception.ExportException;
+import com.onat.jurist.lawyer.repository.AvocatRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AvocatService {
+
+    private final AvocatRepository avocatRepository;
+
+
+    public AvocatResponse createAvocat(AvocatRequest request) {
+        Avocat avocat = Avocat.builder()
+                .prenom(request.getPrenom())
+                .identifiant(request.getIdentifiant())
+                .nom(request.getNom())
+                .email(request.getEmail())
+                .telephone(request.getTelephone())
+                .region(request.getRegion())
+                .adresse(request.getAdresse())
+                .dateInscription(request.getDateInscription())
+
+
+                .build();
+
+        Avocat saved = avocatRepository.save(avocat);
+        return mapToResponse(saved);
+    }
+
+
+    public List<AvocatResponse> getAllAvocats() {
+        return avocatRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+
+    public Optional<AvocatResponse> getAvocatById(Long id) {
+        return avocatRepository.findById(id).map(this::mapToResponse);
+    }
+
+
+    public AvocatResponse updateAvocat(Long id, AvocatRequest updatedAvocat) {
+        Avocat avocat = avocatRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Avocat non trouvé avec l'id: " + id));
+
+        avocat.setPrenom(updatedAvocat.getPrenom());
+        avocat.setIdentifiant(updatedAvocat.getIdentifiant());
+        avocat.setNom(updatedAvocat.getNom());
+        avocat.setEmail(updatedAvocat.getEmail());
+        avocat.setTelephone(updatedAvocat.getTelephone());
+        avocat.setRegion(updatedAvocat.getRegion());
+        avocat.setAdresse(updatedAvocat.getAdresse());
+
+        Avocat updated = avocatRepository.save(avocat);
+        return mapToResponse(updated);
+    }
+
+
+    public void deleteAvocat(Long id) {
+        avocatRepository.deleteById(id);
+    }
+
+
+    private AvocatResponse mapToResponse(Avocat avocat) {
+        return AvocatResponse.builder()
+                .id(avocat.getId())
+                .prenom(avocat.getPrenom())
+                .identifiant(avocat.getIdentifiant())
+                .nom(avocat.getNom())
+                .email(avocat.getEmail())
+                .telephone(avocat.getTelephone())
+                .region(avocat.getRegion())
+                .adresse(avocat.getAdresse())
+                .dateInscription(avocat.getDateInscription())
+                .affairesAcceptees(avocat.getAffairesAcceptees())
+                .affairesRefusees(avocat.getAffairesRefusees())
+                .affairesEnCours(avocat.getAffairesEnCours())
+                .lastAssignedAt(avocat.getLastAssignedAt())
+                .build();
+    }
+
+    public byte[] exportAvocatsToExcel() {
+        List<Avocat> avocats = avocatRepository.findAll();
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Liste Avocats");
+
+            // Header
+            Row header = sheet.createRow(0);
+            String[] columns = {"Identifiant", "Prénom", "Nom", "Email", "Téléphone", "Région", "Adresse", "Date Inscription"};
+
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(columns[i]);
+            }
+
+            // Data
+            int rowNum = 1;
+            for (Avocat avocat : avocats) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(avocat.getIdentifiant());
+                row.createCell(1).setCellValue(avocat.getPrenom());
+                row.createCell(2).setCellValue(avocat.getNom());
+                row.createCell(3).setCellValue(avocat.getEmail());
+                row.createCell(4).setCellValue(avocat.getTelephone());
+                row.createCell(5).setCellValue(avocat.getRegion());
+                row.createCell(6).setCellValue(avocat.getAdresse());
+                row.createCell(7).setCellValue(
+                        avocat.getDateInscription() != null ? avocat.getDateInscription().toString() : ""
+                );
+            }
+
+            // Auto size columns
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new ExportException("Erreur lors de l'export Excel", e);
+        }
+    }
+
+    public byte[] exportAvocatsToPdfWithDesign() {
+        List<Avocat> avocats = avocatRepository.findAll();
+
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            Document document = new Document(PageSize.A4, 40, 40, 80, 60);
+
+            PdfWriter writer = PdfWriter.getInstance(document, out);
+
+            // ---------------------- FOOTER --------------------------
+            writer.setPageEvent(new PdfPageEventHelper() {
+                @Override
+                public void onEndPage(PdfWriter writer, Document document) {
+                    Phrase footer = new Phrase("Page " + writer.getPageNumber());
+                    ColumnText.showTextAligned(
+                            writer.getDirectContent(),
+                            Element.ALIGN_CENTER,
+                            footer,
+                            (document.right() - document.left()) / 2 + document.leftMargin(),
+                            document.bottom() - 20,
+                            0
+                    );
+                }
+            });
+
+            document.open();
+
+            // ====================== HEADER ===========================
+            // ====================== HEADER ===========================
+            Image logo = loadLogo();
+
+            PdfPTable headerTable = new PdfPTable(2);
+            headerTable.setWidthPercentage(100);
+            headerTable.setWidths(new int[]{1, 4});
+
+            PdfPCell logoCell;
+            if (logo != null) {
+                logoCell = new PdfPCell(logo);
+            } else {
+                logoCell = new PdfPCell(); // empty cell if logo not found
+            }
+            logoCell.setBorder(Rectangle.NO_BORDER);
+            logoCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+            logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+// Title cell
+            Font titleFont = new Font(Font.HELVETICA, 18, Font.BOLD);
+            Paragraph titleText = new Paragraph("ORDRE NATIONAL DES AVOCATS DE TUNISIE", titleFont);
+            titleText.setAlignment(Element.ALIGN_CENTER);
+
+            PdfPCell titleCell = new PdfPCell(titleText);
+            titleCell.setBorder(Rectangle.NO_BORDER);
+            titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            titleCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+            headerTable.addCell(logoCell);
+            headerTable.addCell(titleCell);
+
+            document.add(headerTable);
+
+
+
+            // ================= TITLE & SUBTITLE =======================
+            Font titleFont2 = new Font(Font.HELVETICA, 20, Font.BOLD);
+            Paragraph title = new Paragraph("Liste des Avocats", titleFont2);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingBefore(10);
+            title.setSpacingAfter(15);
+            document.add(title);
+
+            Font subFont = new Font(Font.HELVETICA, 12, Font.NORMAL);
+            Paragraph sub = new Paragraph("Export généré automatiquement - " + LocalDate.now(), subFont);
+            sub.setAlignment(Element.ALIGN_CENTER);
+            sub.setSpacingAfter(20);
+            document.add(sub);
+
+            // ======================= TABLE ============================
+            // ======================= TABLE ============================
+            PdfPTable table = new PdfPTable(8);
+            table.setWidthPercentage(105);
+            table.setSpacingBefore(15);
+
+
+            float[] widths = {30f, 25f, 25f, 35f, 25f, 25f, 30f, 35f};
+            table.setWidths(widths);
+
+
+            String[] headers = {"Identifiant", "Prénom", "Nom", "Email", "N°Tél", "Région", "Adresse", "Inscription"};
+
+            Font headerFont = new Font(Font.HELVETICA, 11, Font.BOLD);
+
+            for (String h : headers) {
+                PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
+                cell.setBackgroundColor(new java.awt.Color(230, 230, 230));
+                cell.setPadding(8);
+                table.addCell(cell);
+            }
+
+            Font cellFont = new Font(Font.HELVETICA, 10);
+
+            for (Avocat avocat : avocats) {
+                table.addCell(new Phrase(avocat.getIdentifiant(), cellFont));
+                table.addCell(new Phrase(avocat.getPrenom(), cellFont));
+                table.addCell(new Phrase(avocat.getNom(), cellFont));
+                table.addCell(new Phrase(avocat.getEmail(), cellFont));
+                table.addCell(new Phrase(avocat.getTelephone(), cellFont));
+                table.addCell(new Phrase(avocat.getRegion(), cellFont));
+                table.addCell(new Phrase(avocat.getAdresse(), cellFont));
+
+                table.addCell(new Phrase(
+                        avocat.getDateInscription() != null ? avocat.getDateInscription().toString() : "",
+                        cellFont
+                ));
+            }
+
+            document.add(table);
+
+            document.close();
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new ExportException("Erreur lors de la génération du PDF", e);
+        }
+    }
+    private Image loadLogo() {
+        try {
+            ClassPathResource imgFile = new ClassPathResource("logo.jpg");
+            byte[] imageBytes;
+
+            try (InputStream is = imgFile.getInputStream()) {
+                imageBytes = is.readAllBytes();
+            }
+
+            Image logo = Image.getInstance(imageBytes);
+            logo.scaleAbsolute(100, 80);
+            return logo;
+
+        } catch (Exception e) {
+            log.warn("⚠️ Logo introuvable : {}", e.getMessage());
+            return null; // return null if logo not found
+        }
+    }
+
+}

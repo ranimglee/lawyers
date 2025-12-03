@@ -15,6 +15,10 @@ public class AvocatRequest {
     @Size(max = 50, message = "Le prénom ne peut pas dépasser 50 caractères")
     private String prenom;
 
+    @NotBlank(message = "L'identifiant est obligatoire")
+    @Size(max = 50, message = "L'identifiant ne peut pas dépasser 50 caractères")
+    private String identifiant;
+
     @NotBlank(message = "Le nom est obligatoire")
     @Size(max = 50, message = "Le nom ne peut pas dépasser 50 caractères")
     private String nom;

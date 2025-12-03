@@ -55,4 +55,24 @@ public class AvocatController {
         avocatService.deleteAvocat(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportExcel() {
+        byte[] bytes = avocatService.exportAvocatsToExcel();
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=avocats.xlsx")
+                .body(bytes);
+    }
+
+    @GetMapping("/export/pdf/design")
+    public ResponseEntity<byte[]> exportPdfDesign() {
+        byte[] bytes = avocatService.exportAvocatsToPdfWithDesign();
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=avocats.pdf")
+                .body(bytes);
+    }
+
+
 }

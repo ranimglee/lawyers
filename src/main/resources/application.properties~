@@ -1,0 +1,24 @@
+spring.application.name=lawyer
+spring.datasource.url=jdbc:mysql://localhost:3306/juristDB?useUnicode=true&useJDBCCompliantTimezoneShift=true&createDatabaseIfNotExist=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Server
+server.port=8080
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+
+spring.mail.username=legy.services@gmail.com
+spring.mail.password=pkcp jtpa lajd fsvy
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+
+jwt.secret=YourSuperLongSecureSecretKeyHereWith32CharsOrMore
+jwt.expiration=86400000
+app.admin.email=admin@system.com
+app.admin.password=admin123

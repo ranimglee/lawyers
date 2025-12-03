@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -28,6 +27,7 @@ public class AcceptanceService {
     private final EmailNotificationRepository emailRepo;
     private final AffaireAssignmentService assignmentService;
 
+    @Transactional
     public void acceptAffaire(Long affaireId, Long avocatId) {
         Affaire affaire = affaireRepository.findById(affaireId)
                 .orElseThrow(() -> new IllegalArgumentException("Affaire not found"));
@@ -35,28 +35,20 @@ public class AcceptanceService {
                 .orElseThrow(() -> new IllegalArgumentException("Avocat not found"));
 
         if (affaire.getAvocatAssigne() == null || !affaire.getAvocatAssigne().getId().equals(avocatId)) {
-            log.warn("⚠️ Lawyer {} tried to accept affaire {} but is not the assignee", avocatId, affaireId);
             throw new IllegalStateException("You are not the current assignee of this affaire");
+        }
+
+        // Check if the affaire has timed out
+        if (hasAffaireTimedOut(affaire)) {
+            throw new IllegalStateException("⏳ This affaire has timed out and can no longer be accepted.");
         }
 
         affaire.setStatut(StatutAffaire.ACCEPTEE);
         affaireRepository.save(affaire);
-        log.info("✅ Affaire {} accepted by lawyer {} ({})", affaireId, avocat.getPrenom(), avocat.getNom());
 
         avocat.setAffairesEnCours(avocat.getAffairesEnCours() + 1);
         avocat.setAffairesAcceptees(avocat.getAffairesAcceptees() + 1);
         avocatRepository.save(avocat);
-        log.info("📈 Lawyer {} now has {} ongoing affaires and {} accepted affaires", avocatId,
-                avocat.getAffairesEnCours(), avocat.getAffairesAcceptees());
-
-        List<EmailNotification> emails = emailRepo.findAll();
-        emails.stream()
-                .filter(e -> e.getAffaire() != null && e.getAffaire().getId().equals(affaireId))
-                .forEach(e -> {
-                    e.setAccepted(true);
-                    emailRepo.save(e);
-                    log.info("✉️ Notification {} marked as accepted for affaire {}", e.getId(), affaireId);
-                });
     }
 
     @Transactional
@@ -70,25 +62,31 @@ public class AcceptanceService {
             throw new IllegalStateException("You are not the current assignee of this affaire");
         }
 
-        // Mark refusal in notifications and store the lawyer
-        List<EmailNotification> emails = Optional.ofNullable(affaire.getNotifications()).orElse(List.of());
-        emails.stream()
-                .filter(e -> e.getAffaire() != null && e.getAffaire().getId().equals(affaireId))
-                .forEach(e -> {
-                    e.setAccepted(false);
-                    e.setAvocat(avocat); // save who refused
-                    emailRepo.save(e);
-                    log.info("✉️ Notification {} marked as refused for affaire {}", e.getId(), affaireId);
-                });
+        if (hasAffaireTimedOut(affaire)) {
+            throw new IllegalStateException("⏳ This affaire has timed out and can no longer be refused.");
+        }
 
-        // Clear the assigned lawyer
         affaire.setAvocatAssigne(null);
         avocat.setAffairesRefusees(avocat.getAffairesRefusees() + 1);
         affaireRepository.save(affaire);
-        log.info("❌ Lawyer {} refused affaire {}. Total refused affaires: {}", avocatId, affaireId, avocat.getAffairesRefusees());
+        avocatRepository.save(avocat);
 
-        // Assign next best lawyer
         assignmentService.assignBestLawyer(affaire);
+    }
+    /**
+     * Returns true if the assigned lawyer can no longer act on the affaire
+     */
+    private boolean hasAffaireTimedOut(Affaire affaire) {
+        Avocat lawyer = affaire.getAvocatAssigne();
+        if (lawyer == null || lawyer.getLastAssignedAt() == null) return false;
+
+        long timeoutMinutes = switch (affaire.getType()) {
+            case ENQUETE, ENQUETEUR_PRELIMINAIRE -> 15;
+            default -> 7 * 24 * 60;
+        };
+
+        LocalDateTime expiry = lawyer.getLastAssignedAt().plusMinutes(timeoutMinutes);
+        return LocalDateTime.now().isAfter(expiry);
     }
 
     /**

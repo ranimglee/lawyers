@@ -24,6 +24,7 @@ public class Avocat {
     private Long id;
 
     private String prenom;
+    private String identifiant;
 
     private String nom;
 
@@ -32,6 +33,7 @@ public class Avocat {
     private String telephone;
 
     private String region;
+
 
     private String adresse;
     private LocalDate dateInscription;

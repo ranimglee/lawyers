@@ -1,0 +1,4 @@
+package com.onat.jurist.lawyer.dto.out;
+
+public class LoginResponse {
+}

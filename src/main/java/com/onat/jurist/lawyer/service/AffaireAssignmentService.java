@@ -29,6 +29,15 @@ public class AffaireAssignmentService {
     public Optional<Avocat> assignBestLawyer(Affaire affaire) {
         log.info("📝 Starting assignment for affaire '{}'", affaire.getTitre());
 
+        // Check if there's already a lawyer assigned for this accused
+        Optional<Avocat> prior = getExistingLawyerForAccuse(affaire.getNomAccuse());
+        if (prior.isPresent()) {
+            Avocat a = prior.get();
+            affaire.setAvocatAssigne(a);
+            affaireRepository.save(affaire);
+            emailService.sendAssignmentEmail(a, affaire);
+            return Optional.of(a);
+        }
         // Collect lawyers who already refused this affaire
         List<Long> refusedIds = Optional.ofNullable(affaire.getNotifications())
                 .orElse(List.of())
@@ -56,7 +65,7 @@ public class AffaireAssignmentService {
             return Optional.empty();
         }
 
-        Avocat chosen = sorted.get(0);
+        Avocat chosen = sorted.getFirst();
         affaire.setAvocatAssigne(chosen);
         affaireRepository.save(affaire);
 

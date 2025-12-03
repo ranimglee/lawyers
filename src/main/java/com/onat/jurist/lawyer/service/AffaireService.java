@@ -110,7 +110,7 @@ public class AffaireService {
     }
 
     public List<Affaire> getAffairesByAvocat(Long avocatId) {
-        log.info("👩‍⚖️ Retrieving affaires for lawyer with id {}", avocatId);
+        log.info(" Retrieving affaires for lawyer with id {}", avocatId);
         return affaireRepository.findAllByAvocatId(avocatId);
     }
 }

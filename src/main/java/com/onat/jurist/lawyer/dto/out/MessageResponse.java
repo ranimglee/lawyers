@@ -1,0 +1,3 @@
+package com.onat.jurist.lawyer.dto.out;
+
+public record MessageResponse(String message) {}

@@ -1,0 +1,41 @@
+package com.onat.jurist.lawyer.service;
+
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class EmailService {
+
+    private final JavaMailSender mailSender;
+
+    @Value("${app.frontend.url:http://localhost:8081}")
+    private String frontendUrl;
+
+    public boolean sendResetLink(String to, String rawToken) {
+        String link = frontendUrl + "/reset-password?token=" + rawToken;
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(to);
+            helper.setSubject("Réinitialisation du mot de passe");
+            helper.setText(
+                    "Cliquez ici pour réinitialiser votre mot de passe: <a href='" + link + "'>" + link + "</a>",
+                    true
+            );
+
+            mailSender.send(message);
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+}

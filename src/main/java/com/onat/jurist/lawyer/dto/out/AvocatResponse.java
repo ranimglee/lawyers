@@ -13,6 +13,7 @@ import java.util.List;
 public class AvocatResponse {
     private Long id;
     private String prenom;
+    private String identifiant;
     private String nom;
     private String email;
     private String telephone;

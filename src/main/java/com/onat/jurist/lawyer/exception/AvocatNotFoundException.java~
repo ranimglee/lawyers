@@ -1,0 +1,7 @@
+package com.onat.jurist.lawyer.exception;
+
+public class AvocatNotFoundException extends RuntimeException {
+  public AvocatNotFoundException(String message) {
+    super(message);
+  }
+}

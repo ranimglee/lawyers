@@ -1,61 +1,81 @@
 package com.onat.jurist.lawyer.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
-
+@Slf4j
 @Component
 public class JwtUtil {
 
-
-    @Value("${jwt.secret:SecretKeyForJwtShouldBeLongAndSafe}")
+    @Value("${jwt.secret}")
     private String secret;
-
 
     @Value("${jwt.expiration:3600000}")
     private Long expirationMs;
 
+    private byte[] keyBytes;
 
-    public String generateToken(String username) {
+    @PostConstruct
+    public void init() {
+        if (secret == null || secret.trim().length() < 32) {
+            log.error("JWT secret is invalid!");
+            throw new IllegalStateException("JWT secret must be provided and at least 32 characters long (set env JWT_SECRET).");
+        }
+        keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        log.info("JWT secret initialized successfully");
+    }
+
+    private JwtParser getParser() {
+        return Jwts.parserBuilder()
+                .setSigningKey(Keys.hmacShaKeyFor(keyBytes))
+                .build();
+    }
+
+    public String generateToken(Long userId, String email) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(email)
+                .claim("userId", userId)       // add the user ID
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS256)
+                .signWith(Keys.hmacShaKeyFor(keyBytes), SignatureAlgorithm.HS256)
                 .compact();
     }
 
 
     public Boolean validateToken(String token, String username) {
-        final String user = extractUsername(token);
-        return (user.equals(username) && !isTokenExpired(token));
+        try {
+            final String user = extractUsername(token);
+            return (user.equals(username) && !isTokenExpired(token));
+        } catch (JwtException | IllegalArgumentException ex) {
+            return false;
+        }
     }
-
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
-        return claimsResolver.apply(claims);
+    public <T> T extractClaim(String token, Function<Claims, T> resolver) {
+        Claims claims = getParser().parseClaimsJws(token).getBody();
+        return resolver.apply(claims);
     }
 
-
-    private Boolean isTokenExpired(String token) {
+    private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", Long.class));
+    }
+
 }

@@ -6,7 +6,7 @@ import com.onat.jurist.lawyer.entity.EmailNotification;
 import com.onat.jurist.lawyer.repository.EmailNotificationRepository;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -15,14 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailNotificationService {
 
 
     private final EmailNotificationRepository emailRepo;
-    private final JavaMailSender mailSender; // configure in application.properties
+    private final JavaMailSender mailSender;
 
     @Async
     @Transactional
@@ -51,14 +51,16 @@ public class EmailNotificationService {
 
             helper.setTo(lawyer.getEmail());
             helper.setSubject(email.getSubject());
-            helper.setText(htmlContent, true); // ← IMPORTANT (HTML)
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
             email.setSuccess(true);
 
         } catch (Exception ex) {
             email.setSuccess(false);
+            log.error("❌ Failed to send assignment email to {} for affaire {}: {}", lawyer.getEmail(), affaire.getNumero(), ex.getMessage(), ex);
         }
+
 
         emailRepo.save(email);
     }
