@@ -18,14 +18,18 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String email;
+
 
     private String password;
 
-    private String role = "ADMIN";
-
+    @Builder.Default
     @Column(name = "failed_attempts", nullable = false)
     private Integer failedAttempts = 0;
+
+    @Builder.Default
+    private String role = "ADMIN";
 
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
