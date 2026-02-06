@@ -51,7 +51,7 @@ class AffaireAssignmentServiceTest {
         Affaire a = new Affaire();
         a.setId(id);
         a.setNomAccuse(accuse);
-        a.setType(TypeAffaire.ENQUETE);
+        a.setType(TypeAffaire.CIVIL);
         return a;
     }
 

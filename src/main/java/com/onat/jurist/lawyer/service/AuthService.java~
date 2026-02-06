@@ -84,8 +84,12 @@ public class  AuthService {
     }
 
     // ------------------- CHANGE PASSWORD -------------------------
-    public String changePassword(Long userId, String oldPass, String newPass) {
-        User user = userRepository.findById(userId)
+    public String changePassword(String token, String oldPass, String newPass) {
+
+        // Extract email (or userId if you put it in the JWT)
+        String email = jwtUtil.extractUsername(token);
+
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(oldPass, user.getPassword())) {
@@ -97,6 +101,7 @@ public class  AuthService {
 
         return "Password changed successfully";
     }
+
 
     private String sha256(String input) {
         try {

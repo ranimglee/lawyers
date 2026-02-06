@@ -1,0 +1,4 @@
+package com.onat.jurist.lawyer.entity;
+
+public enum SousTypeAffaire {
+}

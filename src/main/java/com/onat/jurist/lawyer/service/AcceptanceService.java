@@ -42,6 +42,11 @@ public class AcceptanceService {
         if (hasAffaireTimedOut(affaire)) {
             throw new IllegalStateException("⏳ This affaire has timed out and can no longer be accepted.");
         }
+        emailRepo.findByAffaireAndAvocat(affaire, avocat).ifPresent(email -> {
+            email.setAccepted(true);
+            email.setRespondedAt(LocalDateTime.now());
+            emailRepo.save(email);
+        });
 
         affaire.setStatut(StatutAffaire.ACCEPTEE);
         affaireRepository.save(affaire);
@@ -66,13 +71,24 @@ public class AcceptanceService {
             throw new IllegalStateException("⏳ This affaire has timed out and can no longer be refused.");
         }
 
+        // 1️⃣ Mark the email notification as refused
+        emailRepo.findByAffaireAndAvocat(affaire, avocat).ifPresent(email -> {
+            email.setAccepted(false);
+            email.setRespondedAt(LocalDateTime.now());
+            emailRepo.save(email);
+        });
+
+        // 2️⃣ Update counters and remove assignment
         affaire.setAvocatAssigne(null);
         avocat.setAffairesRefusees(avocat.getAffairesRefusees() + 1);
         affaireRepository.save(affaire);
         avocatRepository.save(avocat);
 
+        // 3️⃣ Reassign to next best lawyer
         assignmentService.assignBestLawyer(affaire);
     }
+
+
     /**
      * Returns true if the assigned lawyer can no longer act on the affaire
      */

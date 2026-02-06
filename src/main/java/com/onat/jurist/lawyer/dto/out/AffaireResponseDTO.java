@@ -1,5 +1,6 @@
 package com.onat.jurist.lawyer.dto.out;
 
+import com.onat.jurist.lawyer.entity.SousTypeAffaire;
 import com.onat.jurist.lawyer.entity.StatutAffaire;
 import com.onat.jurist.lawyer.entity.TypeAffaire;
 import lombok.Builder;
@@ -20,5 +21,7 @@ public class AffaireResponseDTO {
     private StatutAffaire statut;
     private Long avocatId;
     private String avocatNom; // <-- add this
+    private SousTypeAffaire sousType;
+
 
 }

@@ -50,9 +50,5 @@ public class Affaire {
     @JsonIgnore
     private List<EmailNotification> notifications = new ArrayList<>();
 
-    @Enumerated(EnumType.STRING)
-    private SousTypeAffaire sousType;
-
-
 
 }

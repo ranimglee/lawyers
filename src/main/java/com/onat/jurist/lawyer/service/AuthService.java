@@ -26,15 +26,40 @@ public class  AuthService {
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
 
-    // ---------------------- LOGIN -------------------------------
     public String login(String email, String password) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Admin not found"));
 
+        // 🔒 Check if user is locked
+        if (user.isAccountLocked()) {
+            throw new InvalidCredentialsException(
+                    "Account locked. Try again at: " + user.getLockedUntil());
+        }
+
+        // ❌ Wrong password
         if (!passwordEncoder.matches(password, user.getPassword())) {
+
+            int newAttempts = user.getFailedAttempts() + 1;
+            user.setFailedAttempts(newAttempts);
+
+            // Lock after 3 mistakes
+            if (newAttempts >= 3) {
+                user.setLockedUntil(LocalDateTime.now().plusMinutes(15));
+                userRepository.save(user);
+
+                throw new InvalidCredentialsException(
+                        "Too many failed attempts. Account locked for 15 minutes.");
+            }
+
+            userRepository.save(user);
             throw new InvalidCredentialsException("Invalid credentials");
         }
+
+        // ✅ Correct password — reset attempts
+        user.setFailedAttempts(0);
+        user.setLockedUntil(null);
+        userRepository.save(user);
 
         return jwtUtil.generateToken(email);
     }
