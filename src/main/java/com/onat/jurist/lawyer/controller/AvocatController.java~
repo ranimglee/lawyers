@@ -70,7 +70,7 @@ public class AvocatController {
         byte[] bytes = avocatService.exportAvocatsToPdfWithDesign();
 
         return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=avocats_design.pdf")
+                .header("Content-Disposition", "attachment; filename=avocats.pdf")
                 .body(bytes);
     }
 

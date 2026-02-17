@@ -67,6 +67,8 @@ public class AffaireAssignmentService {
 
         Avocat chosen = sorted.getFirst();
         affaire.setAvocatAssigne(chosen);
+        affaire.setAssignedAt(LocalDateTime.now());
+
         affaireRepository.save(affaire);
 
         chosen.setLastAssignedAt(LocalDateTime.now());

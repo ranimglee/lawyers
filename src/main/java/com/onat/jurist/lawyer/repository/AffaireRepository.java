@@ -17,6 +17,7 @@ public interface AffaireRepository extends JpaRepository<Affaire, Long> {
     Optional<Affaire> findFirstByNomAccuse(String nomAccuse);
     @Query("SELECT a FROM Affaire a WHERE a.avocatAssigne.id = :avocatId")
     List<Affaire> findAllByAvocatId(@Param("avocatId") Long avocatId);
-    List<Affaire> findAllByStatut(StatutAffaire statutAffaire);
+    @Query("SELECT a FROM Affaire a LEFT JOIN FETCH a.notifications WHERE a.statut = :statut")
+    List<Affaire> findAllByStatutWithNotifications(@Param("statut") StatutAffaire statut);
 
 }

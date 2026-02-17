@@ -1,5 +1,6 @@
 package com.onat.jurist.lawyer.dto.in;
 
+import com.onat.jurist.lawyer.entity.AssignmentMode;
 import com.onat.jurist.lawyer.entity.SousTypeAffaire;
 import com.onat.jurist.lawyer.entity.TypeAffaire;
 import jakarta.validation.constraints.NotBlank;
@@ -25,6 +26,9 @@ public class AffaireRequestDTO {
     @NotNull
     private LocalDateTime dateTribunal;
 
+    @NotNull
+    private AssignmentMode assignmentMode; // NEW
+    private Long avocatId;                 // NEW (manual only)
 
     private SousTypeAffaire sousType;
 

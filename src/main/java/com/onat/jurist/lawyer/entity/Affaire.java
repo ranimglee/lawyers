@@ -11,40 +11,44 @@ import java.util.List;
 
 @Entity
 @Table(name = "affaires")
-@Setter
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class Affaire {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String numero;
 
+    @Column(nullable = false)
     private String titre;
 
     @Enumerated(EnumType.STRING)
     private TypeAffaire type;
 
+    @Column(nullable = false)
     private String nomAccuse;
 
     private LocalDateTime dateCreation;
 
-    private LocalDateTime dateTribunal ;
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private AssignmentMode assignmentMode = AssignmentMode.AUTOMATIC;
 
+    private LocalDateTime dateTribunal;
+    private LocalDateTime assignedAt;
 
     @ManyToOne
-    @JsonBackReference
     @JsonIgnore
     private Avocat avocatAssigne;
 
     @Enumerated(EnumType.STRING)
-    private StatutAffaire statut ;
-
+    private StatutAffaire statut;
 
     @OneToMany(mappedBy = "affaire", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -52,7 +56,4 @@ public class Affaire {
 
     @Enumerated(EnumType.STRING)
     private SousTypeAffaire sousType;
-
-
-
 }

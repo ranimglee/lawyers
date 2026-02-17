@@ -36,12 +36,14 @@ public class EmailNotificationService {
                 .subject("[JURIST] Nouvelle affaire à accepter: " + affaire.getNumero())
                 .content(htmlContent)
                 .affaire(affaire)
+                .avocat(lawyer)
                 .success(false)
                 .sentAt(LocalDateTime.now())
                 .accepted(false)
                 .actionToken(token)
                 .tokenExpiry(LocalDateTime.now().plusDays(7))
                 .build();
+
 
         emailRepo.save(email);
 

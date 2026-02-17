@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,40 +26,63 @@ public class TimeoutAffaireScheduler {
     private final AffaireAssignmentService assignmentService;
 
     @Scheduled(fixedRate = 60000)
+    @Transactional
+
     public void processTimeoutAffaires() {
         LocalDateTime now = LocalDateTime.now();
+        log.info("🔄 Scheduler started at {}", now);
 
-        List<Affaire> pendingAffaires = affaireRepository.findAllByStatut(StatutAffaire.EN_ATTENTE);
+        // Récupérer toutes les affaires en attente
+        List<Affaire> pendingAffaires = affaireRepository.findAllByStatutWithNotifications(StatutAffaire.EN_ATTENTE);
+        log.info("📄 {} affaires en attente récupérées.", pendingAffaires.size());
 
         for (Affaire affaire : pendingAffaires) {
-            Avocat assignedLawyer = affaire.getAvocatAssigne();
-            LocalDateTime assignmentTime = assignedLawyer != null ? assignedLawyer.getLastAssignedAt() : null;
+            log.info("➡ Vérification de l'affaire {} (type {})", affaire.getId(), affaire.getType());
 
-            if (assignedLawyer == null || assignmentTime == null) {
+            Avocat assignedLawyer = affaire.getAvocatAssigne();
+            LocalDateTime assignmentTime = affaire.getAssignedAt(); // Utiliser assignedAt spécifique à l'affaire
+
+            if (assignedLawyer == null) {
+                log.info("   ❌ Pas d'avocat assigné pour l'affaire {}.", affaire.getId());
+                continue;
+            }
+            if (assignmentTime == null) {
+                log.info("   ❌ Aucun timestamp d'assignation pour l'affaire {}.", affaire.getId());
                 continue;
             }
 
-            // Determine timeout based on affair type
-            long timeoutMinutes = switch (affaire.getType()) {
-                case ENQUETE, ENQUETEUR_PRELIMINAIRE -> 15;
-                default -> 7 * 24 * 60;
-            };
+            log.info("   ⏱ Affaire assignée à l'avocat {} depuis {}", assignedLawyer.getId(), assignmentTime);
 
+            // Déterminer le timeout selon le type d’affaire
+            long timeoutMinutes = switch (affaire.getType()) {
+                case ENQUETE, ENQUETEUR_PRELIMINAIRE -> 5;
+                default -> 7 * 24 * 60; // 7 jours
+            };
             LocalDateTime expiry = assignmentTime.plusMinutes(timeoutMinutes);
+            log.info("   ⏳ Timeout prévu à {}", expiry);
 
             if (now.isAfter(expiry)) {
+                log.info("   ⚠ Affaire {} a dépassé le délai d'assignation.", affaire.getId());
+
+                // Incrémenter le nombre de refus de l'avocat
                 assignedLawyer.setAffairesRefusees(assignedLawyer.getAffairesRefusees() + 1);
                 avocatRepository.save(assignedLawyer);
+                log.info("   ✅ Avocat {}: nombre de refus mis à jour à {}", assignedLawyer.getId(), assignedLawyer.getAffairesRefusees());
 
+                // Libérer l'affaire pour réassignation
                 affaire.setAvocatAssigne(null);
+                affaire.setAssignedAt(null);
                 affaireRepository.save(affaire);
+                log.info("   ✅ Affaire {} libérée pour réassignation.", affaire.getId());
 
-                log.info("⌛ Affaire {} timed out for lawyer {}. Lawyer refusal recorded.", affaire.getId(), assignedLawyer.getId());
-
-               assignmentService.assignBestLawyer(affaire);
-                log.info("🔄 Affaire {} reassigned automatically after timeout.", affaire.getId());
+                // Réassignation automatique
+                assignmentService.assignBestLawyer(affaire);
+                log.info("   🔄 Affaire {} réassignée automatiquement.", affaire.getId());
+            } else {
+                log.info("   ✅ Affaire {} toujours dans le délai.", affaire.getId());
             }
         }
-    }
 
+        log.info("🔚 Scheduler terminé à {}", LocalDateTime.now());
+    }
 }

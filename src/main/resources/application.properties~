@@ -1,19 +1,16 @@
 spring.application.name=lawyer
-spring.datasource.url=jdbc:mysql://localhost:3306/juristDB?useUnicode=true&useJDBCCompliantTimezoneShift=true&createDatabaseIfNotExist=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=
 
+spring.datasource.url=jdbc:postgresql://juristdb_user:TDDd2VWc4XtCEnVv0AqMBXxw4X57LSXl@dpg-d6a6om3nv86c73fagb60-a.frankfurt-postgres.render.com/juristdb
+spring.datasource.username=juristdb_user
+spring.datasource.password=TDDd2VWc4XtCEnVv0AqMBXxw4X57LSXl
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
-
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.show-sql=true
 # Server
 server.port=8080
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
 
-spring.mail.username=ranim.abassi20@gmail.com
-spring.mail.password=wdep dmrz mabj yhzr
 
 spring.mail.username=${MAIL_USERNAME}
 spring.mail.password=${MAIL_PASSWORD}

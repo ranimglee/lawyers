@@ -88,7 +88,7 @@ public class AffaireService {
 
         emailService.sendAssignmentEmail(avocat, affaire);
 
-        log.info("🧑 Manually assigned lawyer '{}' to affaire '{}'",
+        log.info("🧑‍⚖️ Manually assigned lawyer '{}' to affaire '{}'",
                 avocat.getNom(), affaire.getTitre());
 
         return Optional.of(avocat);

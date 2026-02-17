@@ -1,5 +1,6 @@
 package com.onat.jurist.lawyer.dto.out;
 
+import com.onat.jurist.lawyer.entity.AssignmentMode;
 import com.onat.jurist.lawyer.entity.SousTypeAffaire;
 import com.onat.jurist.lawyer.entity.StatutAffaire;
 import com.onat.jurist.lawyer.entity.TypeAffaire;
@@ -22,6 +23,8 @@ public class AffaireResponseDTO {
     private Long avocatId;
     private String avocatNom; // <-- add this
     private SousTypeAffaire sousType;
+    private LocalDateTime assignedAt;
+    private AssignmentMode assignmentMode; // NEW
 
 
 }
