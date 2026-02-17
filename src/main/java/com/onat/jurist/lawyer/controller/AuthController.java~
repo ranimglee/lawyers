@@ -26,10 +26,13 @@ public class AuthController {
         // Set HttpOnly cookie
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(true);          // must be true for HTTPS
         cookie.setPath("/");
         cookie.setMaxAge(3600);
+        cookie.setDomain("lawyers-j1tr.onrender.com"); // optional
+        cookie.setSameSite("None");      // REQUIRED for cross-origin
         response.addCookie(cookie);
+
 
         return ResponseEntity.ok(new MessageResponse("Login successful"));
     }
@@ -55,15 +58,18 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(
-            @CookieValue("jwt") String token,
-            @RequestBody ChangePasswordRequest req) {
+    public ResponseEntity<MessageResponse> changePassword(
+            @CookieValue(name = "token", required = false) String token,
+            @RequestBody ChangePasswordRequest req
+    ) {
+        if (token == null) {
+            return ResponseEntity.status(401).body(new MessageResponse("Not authenticated"));
+        }
 
-        Long userId = jwtUtil.extr(token);
-
-        authService.changePassword(userId, req.getOldPassword(), req.getNewPassword());
-        return ResponseEntity.ok().build();
+        authService.changePassword(token, req.oldPassword, req.newPassword);
+        return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
     }
+
 
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {

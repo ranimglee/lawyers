@@ -26,10 +26,13 @@ public class AuthController {
         // Set HttpOnly cookie
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(true);          // must be true for HTTPS
         cookie.setPath("/");
         cookie.setMaxAge(3600);
+        cookie.setDomain("lawyers-j1tr.onrender.com"); // optional
         response.addCookie(cookie);
+
+        response.addHeader("Set-Cookie", String.format("token=%s; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=None", token));
 
         return ResponseEntity.ok(new MessageResponse("Login successful"));
     }
