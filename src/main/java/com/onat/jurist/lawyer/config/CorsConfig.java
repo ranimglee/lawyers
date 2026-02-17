@@ -21,7 +21,8 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:8081",
                 "http://localhost:3000",
-                "https://lawyers-j1tr.onrender.com"
+                "https://lawyers-j1tr.onrender.com",
+                "https://onanabeul.netlify.app"
 
 
 
