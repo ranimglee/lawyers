@@ -11,7 +11,7 @@ FROM eclipse-temurin:21-jdk
 ENV APP_HOME=/app
 WORKDIR $APP_HOME
 
-COPY --from=build /app/target/lawyer-0.0.1.jar app.jar
+COPY --from=build /app/target/lawyer-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
