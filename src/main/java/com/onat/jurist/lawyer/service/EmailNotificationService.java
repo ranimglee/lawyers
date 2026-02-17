@@ -70,8 +70,8 @@ public class EmailNotificationService {
 
     private String buildEmailBody(Affaire affaire, String token) {
 
-        String acceptLink = "http://localhost:8080/api/affaires/" + affaire.getId() + "/action?token=" + token + "&decision=accept";
-        String rejectLink = "http://localhost:8080/api/affaires/" + affaire.getId() + "/action?token=" + token + "&decision=reject";
+        String acceptLink = "https://lawyers-j1tr.onrender.com/api/affaires/" + affaire.getId() + "/action?token=" + token + "&decision=accept";
+        String rejectLink = "https://lawyers-j1tr.onrender.com/api/affaires/" + affaire.getId() + "/action?token=" + token + "&decision=reject";
 
         return """
 <!DOCTYPE html>

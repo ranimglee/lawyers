@@ -21,7 +21,7 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI(Environment env) {
 
 
-        String serverUrl = "http://localhost:8080";
+        String serverUrl = "https://lawyers-j1tr.onrender.com";
 
 
         return new OpenAPI()
