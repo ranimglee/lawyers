@@ -74,7 +74,8 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        // Add cookie manually with SameSite=None
+        response.setHeader("Set-Cookie", "token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
 
         return ResponseEntity.ok(new MessageResponse("Logged out successfully"));
     }

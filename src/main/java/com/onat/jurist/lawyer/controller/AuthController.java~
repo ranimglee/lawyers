@@ -28,7 +28,8 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(3600);
-        response.addCookie(cookie);
+        response.addHeader("Set-Cookie", String.format("token=%s; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=None", token));
+
         return ResponseEntity.ok(new MessageResponse("Login successful"));
     }
 
@@ -73,7 +74,9 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        // Add cookie manually with SameSite=None
+        String cookieHeader = String.format("token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None");
+        response.setHeader("Set-Cookie", cookieHeader);
 
         return ResponseEntity.ok(new MessageResponse("Logged out successfully"));
     }
