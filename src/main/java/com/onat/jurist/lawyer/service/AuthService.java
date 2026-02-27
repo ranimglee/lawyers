@@ -27,9 +27,14 @@ public class  AuthService {
     private final EmailService emailService;
 
     public String login(String email, String password) {
+        long start;
 
+        // 🟢 Measure DB time
+        start = System.currentTimeMillis();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Admin not found"));
+        System.out.println("DB find user time: "
+                + (System.currentTimeMillis() - start) + " ms");
 
         // 🔒 Check if user is locked
         if (user.isAccountLocked()) {
