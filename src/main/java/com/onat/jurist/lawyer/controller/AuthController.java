@@ -27,9 +27,7 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-       // cookie.setDomain("lawyers-j1tr.onrender.com");
         cookie.setMaxAge(3600);
-        response.addCookie(cookie);
         response.addHeader("Set-Cookie", String.format("token=%s; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=None", token));
 
         return ResponseEntity.ok(new MessageResponse("Login successful"));
@@ -75,7 +73,6 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-        //cookie.setDomain("lawyers-j1tr.onrender.com");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
 
