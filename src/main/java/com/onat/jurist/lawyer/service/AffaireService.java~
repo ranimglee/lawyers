@@ -8,14 +8,16 @@ import com.onat.jurist.lawyer.repository.AvocatRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
+        import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,8 @@ public class AffaireService {
     private final AffaireAssignmentService assignmentService;
     private final EmailNotificationService emailService;
     private final AvocatRepository avocatRepository;
+    private final AffaireClotureService affaireClotureService;
+
 
     @Transactional
     public AffaireResponseDTO createAffaire(AffaireRequestDTO dto) {
@@ -88,7 +92,7 @@ public class AffaireService {
 
         emailService.sendAssignmentEmail(avocat, affaire);
 
-        log.info("🧑‍⚖️ Manually assigned lawyer '{}' to affaire '{}'",
+        log.info("🧑 Manually assigned lawyer '{}' to affaire '{}'",
                 avocat.getNom(), affaire.getTitre());
 
         return Optional.of(avocat);
@@ -209,7 +213,64 @@ public class AffaireService {
                 .toList();
     }
 
+    public long countAffaires() {
+        return affaireRepository.count();
+    }
+
+    public Map<String, Long> countAffairesByStatus() {
+
+        return affaireRepository.countAffairesByStatus()
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> ((StatutAffaire) row[0]).name(),
+                        row -> (Long) row[1]
+                ));
+    }
+
+    public Map<String, Long> countAffairesByType() {
+        return affaireRepository.countAffairesByType()
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> ((TypeAffaire) row[0]).name(),
+                        row -> (Long) row[1]
+                ));
+    }
+    public double calculateAverageHandlingTime() {
+        return affaireRepository.findAll()
+                .stream()
+                .filter(a -> a.getAssignedAt() != null && a.getDateTribunal() != null)
+                .mapToDouble(a -> Duration.between(a.getAssignedAt(), a.getDateTribunal()).toHours())
+                .average()
+                .orElse(0.0);
+    }
+
+    public Map<String, Long> countAssignedVsUnassigned() {
+        long assigned = affaireRepository.countByAvocatAssigneIsNotNull();
+        long unassigned = affaireRepository.countByAvocatAssigneIsNull();
+        Map<String, Long> map = new HashMap<>();
+        map.put("assigned", assigned);
+        map.put("unassigned", unassigned);
+        return map;
+    }
+    public Map<String, Long> countAffairesByRegion() {
+        return affaireRepository.findAll()
+                .stream()
+                .filter(a -> a.getAvocatAssigne() != null)
+                .collect(Collectors.groupingBy(a -> a.getAvocatAssigne().getRegion(), Collectors.counting()));
+    }
+
+    public Map<String, Long> countAffairesPerMonth() {
+        return affaireRepository.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getDateCreation().getMonth().toString() + "-" + a.getDateCreation().getYear(),
+                        Collectors.counting()
+                ));
+    }
 
 
-
+    @Scheduled(cron = "0 0 * * * *")
+    public void markAffairesAsClosed() {
+        affaireClotureService.updateAffairesCloturees(); 
+    }
 }

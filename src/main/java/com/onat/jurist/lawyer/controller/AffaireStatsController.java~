@@ -1,0 +1,63 @@
+package com.onat.jurist.lawyer.controller;
+
+import com.onat.jurist.lawyer.entity.AssignmentMode;
+import com.onat.jurist.lawyer.entity.StatutAffaire;
+import com.onat.jurist.lawyer.entity.TypeAffaire;
+import com.onat.jurist.lawyer.repository.AffaireRepository;
+import com.onat.jurist.lawyer.service.AffaireService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/dashboard/affaires")
+@RequiredArgsConstructor
+public class AffaireStatsController {
+
+    private final AffaireService affaireService;
+    private final AffaireRepository affaireRepository;
+
+    @GetMapping("/total")
+    public ResponseEntity<Long> getTotalAffaires() {
+        return ResponseEntity.ok(affaireService.countAffaires());
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Long>> getAffairesByStatus() {
+        return ResponseEntity.ok(affaireService.countAffairesByStatus());
+    }
+
+    @GetMapping("/type")
+    public ResponseEntity<Map<String, Long>> getAffairesByType() {
+        return ResponseEntity.ok(affaireService.countAffairesByType());
+    }
+
+    @GetMapping("/avg-handling-time")
+    public ResponseEntity<Double> getAverageHandlingTime() {
+        return ResponseEntity.ok(affaireService.calculateAverageHandlingTime());
+    }
+
+    @GetMapping("/assigned")
+    public ResponseEntity<Map<String, Long>> getAssignedVsUnassigned() {
+        return ResponseEntity.ok(affaireService.countAssignedVsUnassigned());
+    }
+
+    @GetMapping("/reassignments")
+    public ResponseEntity<Long> getReassignmentsCount() {
+        return ResponseEntity.ok(affaireRepository.countByAssignmentMode(AssignmentMode.MANUAL));
+    }
+
+    @GetMapping("/region/affaires")
+    public ResponseEntity<Map<String, Long>> getAffairesByRegion() {
+        return ResponseEntity.ok(affaireService.countAffairesByRegion());
+    }
+
+    @GetMapping("/trends")
+    public ResponseEntity<Map<String, Long>> getAffairesCreatedPerMonth() {
+        return ResponseEntity.ok(affaireService.countAffairesPerMonth());
+    }
+}

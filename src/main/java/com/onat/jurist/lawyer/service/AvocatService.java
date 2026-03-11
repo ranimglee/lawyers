@@ -5,6 +5,8 @@ import com.lowagie.text.pdf.*;
 import com.onat.jurist.lawyer.dto.in.AvocatRequest;
 import com.onat.jurist.lawyer.dto.out.AvocatResponse;
 
+import com.onat.jurist.lawyer.dto.out.LawyerResponseRateDTO;
+import com.onat.jurist.lawyer.dto.out.LawyerWorkloadDTO;
 import com.onat.jurist.lawyer.entity.Avocat;
 import com.onat.jurist.lawyer.exception.ExportException;
 import com.onat.jurist.lawyer.repository.AvocatRepository;
@@ -23,7 +25,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -287,5 +292,46 @@ public class AvocatService {
             return null;
         }
     }
+    public long countLawyers() {
+        return avocatRepository.count();
+    }
+
+    public long countActiveLawyers() {
+        return avocatRepository.countByAffairesIsNotEmpty();
+    }
+
+    public List<LawyerWorkloadDTO> getLawyerWorkload() {
+        return avocatRepository.findAll()
+                .stream()
+                .map(a -> new LawyerWorkloadDTO(a.getId(), a.getNom(), a.getAffaires().size(), a.getAffairesAcceptees(), a.getAffairesRefusees()))
+                .collect(Collectors.toList());
+    }
+
+    public List<LawyerResponseRateDTO> getLawyerResponseRates() {
+        return avocatRepository.findAll()
+                .stream()
+                .map(a -> {
+                    int total = a.getAffairesAcceptees() + a.getAffairesRefusees();
+                    double rate = total > 0 ? ((double) a.getAffairesAcceptees() / total) * 100 : 0;
+                    return new LawyerResponseRateDTO(a.getId(), a.getNom(), rate);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Long> countLawyersByRegion() {
+        return avocatRepository.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(Avocat::getRegion, Collectors.counting()));
+    }
+
+    public Map<Integer, Long> countLawyersPerYear() {
+        return avocatRepository.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getDateInscription().getYear(),
+                        Collectors.counting()
+                ));
+    }
+
 
 }

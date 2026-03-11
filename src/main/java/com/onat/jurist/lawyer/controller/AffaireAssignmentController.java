@@ -61,7 +61,6 @@ public class AffaireAssignmentController {
         if (affaireOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        Affaire affaire = affaireOpt.get();
 
         // On suppose que le token correspond à un avocat
         Long avocatId = acceptanceService.getAvocatIdFromToken(token);

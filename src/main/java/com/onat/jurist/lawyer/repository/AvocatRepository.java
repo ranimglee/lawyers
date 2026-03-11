@@ -11,5 +11,5 @@ import org.springframework.stereotype.Repository;
 public interface AvocatRepository extends JpaRepository<Avocat, Long> {
 
 
-
+    long countByAffairesIsNotEmpty();
 }
