@@ -36,7 +36,7 @@ public class Avocat {
 
     @OneToMany(mappedBy = "avocat", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<EmailNotification> emailNotifications;
-
+    
     private String adresse;
     private LocalDate dateInscription;
     private int affairesAcceptees = 0;
