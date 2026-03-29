@@ -23,9 +23,6 @@ public class CorsConfig {
                 "http://localhost:3000",
                 "https://lawyers-j1tr.onrender.com",
                 "https://onanabeul.netlify.app"
-
-
-
                 ));
         config.setAllowedHeaders(Arrays.asList(
                 HttpHeaders.ORIGIN,

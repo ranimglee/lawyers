@@ -3,7 +3,7 @@ package com.onat.jurist.lawyer.entity;
 public enum SousTypeAffaire {
     // Sous-types pour CRIMINEL
     TRIBUNAL_PREMIERE_INSTANCE_NABEUL,
-    TRIBUNAL_PREMIERE_INSTANCE_KORBA,
+    TRIBUNAL_PREMIERE_INSTANCE_GROMBALIA,
     COUR_APPEL_NABEUL,
 
     // Sous-types pour ENQUETE

@@ -14,7 +14,6 @@ public class AffaireRequestDTO {
     @NotBlank
     private String numero;
 
-    @NotBlank
     private String titre;
 
     @NotNull
@@ -27,8 +26,8 @@ public class AffaireRequestDTO {
     private LocalDateTime dateTribunal;
 
     @NotNull
-    private AssignmentMode assignmentMode; // NEW
-    private Long avocatId;                 // NEW (manual only)
+    private AssignmentMode assignmentMode;
+    private Long avocatId;
 
     private SousTypeAffaire sousType;
 

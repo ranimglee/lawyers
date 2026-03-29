@@ -67,7 +67,7 @@ public class AvocatController {
 
     @GetMapping("/export/pdf/design")
     public ResponseEntity<byte[]> exportPdfDesign() {
-        byte[] bytes = avocatService.exportAvocatsToPdfWithDesign();
+        byte[] bytes = avocatService.exportAvocatsToPdfWithArabic();
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=avocats.pdf")

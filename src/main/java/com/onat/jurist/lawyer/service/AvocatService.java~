@@ -154,7 +154,7 @@ public class AvocatService {
         }
     }
 
-    public byte[] exportAvocatsToPdfWithDesign() {
+    public byte[] exportAvocatsToPdfWithArabic() {
         List<Avocat> avocats = avocatRepository.findAll();
 
         try {
@@ -163,6 +163,7 @@ public class AvocatService {
 
             PdfWriter writer = PdfWriter.getInstance(document, out);
 
+            // Footer
             writer.setPageEvent(new PdfPageEventHelper() {
                 @Override
                 public void onEndPage(PdfWriter writer, Document document) {
@@ -180,24 +181,28 @@ public class AvocatService {
 
             document.open();
 
-            Image logo = loadLogo();
+            // ------------------- LOAD ARABIC FONT ---------------------
+            BaseFont bf = BaseFont.createFont(
+                    "src/main/resources/fonts/NotoNaskhArabic-Regular.ttf", // path to your font
+                    BaseFont.IDENTITY_H,
+                    BaseFont.EMBEDDED
+            );
+            Font arabicFont = new Font(bf, 10);
+            Font arabicFontBold = new Font(bf, 12, Font.BOLD);
+            Font arabicTitleFont = new Font(bf, 18, Font.BOLD);
 
+            // ------------------- LOGO ---------------------
+            Image logo = loadLogo();
             PdfPTable headerTable = new PdfPTable(2);
             headerTable.setWidthPercentage(100);
             headerTable.setWidths(new int[]{1, 4});
 
-            PdfPCell logoCell;
-            if (logo != null) {
-                logoCell = new PdfPCell(logo);
-            } else {
-                logoCell = new PdfPCell();
-            }
+            PdfPCell logoCell = (logo != null) ? new PdfPCell(logo) : new PdfPCell();
             logoCell.setBorder(Rectangle.NO_BORDER);
             logoCell.setHorizontalAlignment(Element.ALIGN_LEFT);
             logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-            Font titleFont = new Font(Font.HELVETICA, 18, Font.BOLD);
-            Paragraph titleText = new Paragraph("ORDRE NATIONAL DES AVOCATS DE TUNISIE", titleFont);
+            Paragraph titleText = new Paragraph("ORDRE NATIONAL DES AVOCATS DE TUNISIE", arabicTitleFont);
             titleText.setAlignment(Element.ALIGN_CENTER);
 
             PdfPCell titleCell = new PdfPCell(titleText);
@@ -210,73 +215,56 @@ public class AvocatService {
 
             document.add(headerTable);
 
+            // ------------------- SUBTITLE ---------------------
+            Paragraph subtitle = new Paragraph("Liste des Avocats - Export généré automatiquement: " + LocalDate.now(), arabicFontBold);
+            subtitle.setAlignment(Element.ALIGN_CENTER);
+            subtitle.setSpacingAfter(15);
+            document.add(subtitle);
 
-
-            // ================= TITLE & SUBTITLE =======================
-            Font titleFont2 = new Font(Font.HELVETICA, 20, Font.BOLD);
-            Paragraph title = new Paragraph("Liste des Avocats", titleFont2);
-            title.setAlignment(Element.ALIGN_CENTER);
-            title.setSpacingBefore(10);
-            title.setSpacingAfter(15);
-            document.add(title);
-
-            Font subFont = new Font(Font.HELVETICA, 12, Font.NORMAL);
-            Paragraph sub = new Paragraph("Export généré automatiquement - " + LocalDate.now(), subFont);
-            sub.setAlignment(Element.ALIGN_CENTER);
-            sub.setSpacingAfter(20);
-            document.add(sub);
-
-            // ======================= TABLE ============================
-            // ======================= TABLE ============================
+            // ------------------- TABLE ---------------------
             PdfPTable table = new PdfPTable(8);
-            table.setWidthPercentage(105);
-            table.setSpacingBefore(15);
+            table.setWidthPercentage(100);
+            table.setSpacingBefore(10);
+            table.setWidths(new float[]{30f, 25f, 25f, 35f, 25f, 25f, 30f, 35f});
+            table.setRunDirection(PdfWriter.RUN_DIRECTION_RTL); // RTL support
 
-
-            float[] widths = {30f, 25f, 25f, 35f, 25f, 25f, 30f, 35f};
-            table.setWidths(widths);
-
-
-            String[] headers = {"Identifiant", "Prénom", "Nom", "Email", "N°Tél", "Région", "Adresse", "Inscription"};
-
-            Font headerFont = new Font(Font.HELVETICA, 11, Font.BOLD);
-
+            // Table headers
+            String[] headers = {"Inscription", "Adresse", "Région", "N°Tél", "Email", "Nom", "Prénom", "Identifiant"};
             for (String h : headers) {
-                PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
+                PdfPCell cell = new PdfPCell(new Phrase(h, arabicFontBold));
                 cell.setBackgroundColor(new java.awt.Color(230, 230, 230));
-                cell.setPadding(8);
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cell.setPadding(5);
                 table.addCell(cell);
             }
 
-            Font cellFont = new Font(Font.HELVETICA, 10);
-
+            // Table data
             for (Avocat avocat : avocats) {
-                table.addCell(new Phrase(avocat.getIdentifiant(), cellFont));
-                table.addCell(new Phrase(avocat.getPrenom(), cellFont));
-                table.addCell(new Phrase(avocat.getNom(), cellFont));
-                table.addCell(new Phrase(avocat.getEmail(), cellFont));
-                table.addCell(new Phrase(avocat.getTelephone(), cellFont));
-                table.addCell(new Phrase(avocat.getRegion(), cellFont));
-                table.addCell(new Phrase(avocat.getAdresse(), cellFont));
-
-                table.addCell(new Phrase(
+                table.addCell(new PdfPCell(new Phrase(
                         avocat.getDateInscription() != null ? avocat.getDateInscription().toString() : "",
-                        cellFont
-                ));
+                        arabicFont
+                )));
+                table.addCell(new PdfPCell(new Phrase(avocat.getAdresse(), arabicFont)));
+                table.addCell(new PdfPCell(new Phrase(avocat.getRegion(), arabicFont)));
+                table.addCell(new PdfPCell(new Phrase(avocat.getTelephone(), arabicFont)));
+                table.addCell(new PdfPCell(new Phrase(avocat.getEmail(), arabicFont)));
+                table.addCell(new PdfPCell(new Phrase(avocat.getNom(), arabicFont)));
+                table.addCell(new PdfPCell(new Phrase(avocat.getPrenom(), arabicFont)));
+                table.addCell(new PdfPCell(new Phrase(avocat.getIdentifiant(), arabicFont)));
             }
 
             document.add(table);
-
             document.close();
+
             return out.toByteArray();
 
         } catch (Exception e) {
-            throw new ExportException("Erreur lors de la génération du PDF", e);
+            throw new ExportException("Erreur lors de la génération du PDF avec arabe", e);
         }
     }
     private Image loadLogo() {
         try {
-            ClassPathResource imgFile = new ClassPathResource("logo.jpg");
+            ClassPathResource imgFile = new ClassPathResource("images/logo.jpg");
             byte[] imageBytes;
 
             try (InputStream is = imgFile.getInputStream()) {
@@ -324,7 +312,7 @@ public class AvocatService {
                 .collect(Collectors.groupingBy(Avocat::getRegion, Collectors.counting()));
     }
 
-    public Map<Integer, Long> countLawyersPerMonth() {
+    public Map<Integer, Long> countLawyersPerYear() {
         return avocatRepository.findAll()
                 .stream()
                 .collect(Collectors.groupingBy(

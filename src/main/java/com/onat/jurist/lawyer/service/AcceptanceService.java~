@@ -57,16 +57,13 @@ public class AcceptanceService {
         avocat.setAffairesAcceptees(avocat.getAffairesAcceptees() + 1);
         avocatRepository.save(avocat);
 
-        // inside acceptAffaire()
-        AdminNotification notification = AdminNotification.builder()
-                .affaire(affaire)
-                .createdAt(LocalDateTime.now())
-                .message("المحامي " + avocat.getPrenom() + " " + avocat.getNom() + " قبل القضية رقم " + affaire.getNumero())
-                .build();
-
-        adminNotificationRepo.save(notification);
-
-// send via WebSocket
+        adminNotificationRepo.save(
+                AdminNotification.builder()
+                        .affaire(affaire)
+                        .createdAt(LocalDateTime.now())
+                        .message("المحامي " + avocat.getPrenom() + " " + avocat.getNom() + " قبل القضية رقم " + affaire.getNumero())
+                        .build()
+        );
         messagingTemplate.convertAndSend("/topic/admin-notifications", notification);
     }
 
@@ -99,17 +96,14 @@ public class AcceptanceService {
         avocatRepository.save(avocat);
 
 
-        AdminNotification notification = AdminNotification.builder()
+        // ✅ Notify admin
+        adminNotificationRepo.save(
+                AdminNotification.builder()
                         .affaire(affaire)
                         .createdAt(LocalDateTime.now())
                         .message("المحامي " + avocat.getPrenom() + " " + avocat.getNom() + " رفض القضية رقم " + affaire.getNumero())
                         .build()
-                ;
-
-        adminNotificationRepo.save(notification);
-
-// send via WebSocket
-        messagingTemplate.convertAndSend("/topic/admin-notifications", notification);
+        );
         // 3️⃣ Reassign to next best lawyer
         assignmentService.assignBestLawyer(affaire);
     }

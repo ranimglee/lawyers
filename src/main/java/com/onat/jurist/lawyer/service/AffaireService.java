@@ -99,14 +99,14 @@ public class AffaireService {
     }
 
 
-
+    @Transactional
     public AffaireResponseDTO updateAffaire(Long id, AffaireRequestDTO dto) {
         validateAffaireRequest(dto);
 
         Affaire affaire = affaireRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Affaire not found with id " + id));
 
-
+        // ✅ Always allow basic edits
         affaire.setNumero(dto.getNumero());
         affaire.setTitre(dto.getTitre());
         affaire.setType(dto.getType());
@@ -114,11 +114,34 @@ public class AffaireService {
         affaire.setDateTribunal(dto.getDateTribunal());
         affaire.setSousType(dto.getSousType());
 
+        // 🚫 ONLY BLOCK ASSIGNMENT CHANGE
+        if (affaire.getStatut() != StatutAffaire.EN_ATTENTE) {
+
+            // If admin tries to change lawyer → block
+            if (dto.getAvocatId() != null &&
+                    (affaire.getAvocatAssigne() == null ||
+                            !affaire.getAvocatAssigne().getId().equals(dto.getAvocatId()))) {
+
+                throw new IllegalStateException(
+                        "Impossible de modifier l’avocat assigné sauf si le statut est en attente."
+                );
+            }
+
+        } else {
+            // ✅ Allowed only when EN_ATTENTE
+            if (dto.getAssignmentMode() == AssignmentMode.MANUAL) {
+                assignManually(affaire, dto.getAvocatId());
+            } else if (dto.getAssignmentMode() == AssignmentMode.AUTOMATIC) {
+                assignmentService.assignBestLawyer(affaire);
+            }
+        }
+
         affaireRepository.save(affaire);
+
         log.info("✏️ Updated affaire '{}' (id: {})", affaire.getTitre(), id);
+
         return mapToDTO(affaire);
     }
-
 
     // ----- VALIDATION -----
     private void validateAffaireRequest(AffaireRequestDTO dto) {
@@ -135,7 +158,7 @@ public class AffaireService {
         return switch (type) {
             case CRIMINEL -> List.of(
                     SousTypeAffaire.TRIBUNAL_PREMIERE_INSTANCE_NABEUL,
-                    SousTypeAffaire.TRIBUNAL_PREMIERE_INSTANCE_KORBA,
+                    SousTypeAffaire.TRIBUNAL_PREMIERE_INSTANCE_GROMBALIA,
                     SousTypeAffaire.COUR_APPEL_NABEUL
             ).contains(sousType);
             case ENQUETE -> List.of(
@@ -164,22 +187,6 @@ public class AffaireService {
                 .build();
     }
 
-    public Map<SousTypeAffaire, String> getSousTypesMap(TypeAffaire type) {
-        return Arrays.stream(SousTypeAffaire.values())
-                .filter(st -> isSousTypeValidForType(st, type))
-                .collect(Collectors.toMap(st -> st, this::formatLabel));
-    }
-
-    private String formatLabel(SousTypeAffaire st) {
-        return switch (st) {
-            case TRIBUNAL_PREMIERE_INSTANCE_NABEUL -> "Tribunal de première instance de Nabeul";
-            case TRIBUNAL_PREMIERE_INSTANCE_KORBA -> "Tribunal de première instance de Korba";
-            case COUR_APPEL_NABEUL -> "Cour d'appel de Nabeul";
-            case NABEUL -> "Nabeul";
-            case ZAGHOUAN -> "Zaghouan";
-            case GROMBALIA -> "Grombalia";
-        };
-    }
 
     // Get one by ID
     public AffaireResponseDTO getAffaireById(Long id) {

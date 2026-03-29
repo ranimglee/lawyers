@@ -55,8 +55,4 @@ public class Affaire {
 
     @Enumerated(EnumType.STRING)
     private SousTypeAffaire sousType;
-
-    @OneToMany(mappedBy = "affaire", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<AdminNotification> adminNotifications = new ArrayList<>();
 }

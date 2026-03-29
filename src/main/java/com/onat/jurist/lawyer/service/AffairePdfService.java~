@@ -28,7 +28,7 @@ public class AffairePdfService {
             context.setVariable("avocatId", affaire.getAvocatAssigne().getIdentifiant());
              context.setVariable("affaireType", affaire.getSousType());
              context.setVariable("dateTribunal", affaire.getDateTribunal());
-            context.setVariable("avocatNom", fixArabic(affaire.getAvocatAssigne().getNom()+" "+affaire.getAvocatAssigne().getPrenom()));
+            context.setVariable("avocatNom", fixArabic(affaire.getAvocatAssigne().getNom()));
             context.setVariable("avocatAdresse", fixArabic(affaire.getAvocatAssigne().getAdresse()));
             context.setVariable("date", LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
             // ✅ Preprocess static Arabic phrases
