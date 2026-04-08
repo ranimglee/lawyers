@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,5 @@ public interface AffaireRepository extends JpaRepository<Affaire, Long> {
     @Query("SELECT a.type, COUNT(a) FROM Affaire a GROUP BY a.type")
     List<Object[]> countAffairesByType();
 
+    List<Affaire> findByDateTribunalBeforeAndStatutNot(LocalDateTime now, StatutAffaire statutAffaire);
 }

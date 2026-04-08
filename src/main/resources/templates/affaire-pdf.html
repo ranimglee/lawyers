@@ -11,95 +11,110 @@
         body {
             font-family: 'Noto Naskh Arabic', serif;
             background: #eef1f5;
-            padding: 2rem;
-            line-height: 1.5;
             color: #1e2d3a;
-            min-height: 100vh;
-            unicode-bidi: embed;
-
             direction: rtl;
-        }
-
-        p, span {
-            direction: rtl;
-            unicode-bidi: embed;
         }
 
         .document {
-            width: 210mm;
-            min-height: 297mm;
+            width: 100%;
+            max-width: 210mm;
+          /*  min-height: 297mm;*/
             margin: 0 auto;
             background: #fff;
-            padding: 20mm 25mm;
+            padding: 5mm 25mm 20mm 25mm;
             border: 1px solid #e0e4e9;
-        }
-        .header-table {
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #1e2d3a;
-            padding-bottom: 10px;
+            box-sizing: border-box;
         }
 
-        .header-text {
+        /* Header */
+        .header {
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+        }
+        .header img { float: right; max-width: 140px; height: auto; } /* ← changed: left → right */
+        .org-name { font-size: 1.5rem; font-weight: 700; text-align: center; }
+        .branch { font-size: 1.1rem; font-weight: 600; text-align: center; margin-top: 0.2rem; }
+
+        /* Sections */
+        .section { margin-bottom: 1rem; }
+        .section p {
+            font-size: 1.05rem;
             text-align: right;
-            vertical-align: middle;
+            line-height: 1.2; /* smaller line spacing */
+            margin-bottom: 4px; /* reduce space between paragraphs */
         }
-
-        .header-logo {
-            text-align: left;
-            width: 150px;
-        }
-
-        .header-logo img {
-            max-width: 120px;
-        }
-
-        /* Use block layouts instead of flex */
-        .header { margin-bottom: 2rem; border-bottom: 2px solid #1e2d3a; padding-bottom: 1rem; }
-        .header img { float: left; max-width: 140px; height: auto; }
-        .org-name { font-size: 1.5rem; font-weight: 700; }
-        .branch { font-size: 1.1rem; font-weight: 600; margin-top: 0.1rem; }
-
-        .section { margin-bottom: 1.2rem; }
-        .section p { font-size: 1.05rem; text-align: right; }
-        .field {
-            display: inline;
-            padding: 0 4px;
-            color: #000;
-            font-weight: bold;
-        }
+        .field { display: inline-block; padding: 0 4px; font-weight: normal; }
         .field-long { min-width: 18rem; }
         .field-date { min-width: 8rem; letter-spacing: 0.15em; }
 
+        /* Greeting */
         .greeting {
             background: #f4f6f8;
             border-right: 4px solid #2c5282;
-            padding: 12px;
+            padding: 10px 12px;
             margin: 15px 0;
             font-size: 14px;
         }
+        /* Date pill */
+        .doc-ref {
+            text-align: left;
+            margin-bottom: 14px;
+        }
+        .doc-ref-pill {
+            font-size: 16px;
+            color: #5a6472;
+
+            padding: 3px 10px;
+        }
+        /* Signature */
         .signature-block {
-            margin-top: 40px;
+            margin-top: 30px;
             text-align: center;
         }
-
         .signature-line {
             display: inline-block;
             width: 150px;
             border-bottom: 1px solid #000;
             margin-top: 10px;
         }
+
+        /* Witness separator with scissor */
+        .witness-separator {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            direction: rtl;
+        }
+        .witness-separator .scissor-icon {
+            flex-shrink: 0;
+            margin-left: 8px;
+            color: #555;
+        }
+        .witness-separator .dotted-line {
+            flex: 1;
+            border-top: 1px dotted #999;
+        }
+        .signature-image {
+            width: 80px;   /* adjust size */
+            height: 80px;
+            margin-top: 10px;
+        }
+        /* Witness block compact */
         .witness-block {
-            margin-top: 30px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-right: 4px solid #2d6a4f;
+            padding: 10px 15px;
             background: #fafafa;
+            border-right: 4px solid #2d6a4f;
+            font-size: 0.95rem;
+        }
+        .witness-block p {
+            margin-bottom: 6px;   /* more space between paragraphs */
+            line-height: 1.6;     /* more readable Arabic text */
         }
         @media print {
             @page { size: A4; margin: 0; }
             body { background: #fff; padding: 0; margin: 0; }
-            .document { width: 210mm; min-height: 297mm; margin: 0; padding: 20mm 25mm; border: none; }
+            .document { width: 210mm; /*min-height: 297mm;*/ margin: 0; padding: 5mm 25mm 20mm 25mm;; border: none; }
         }
     </style>
 </head>
@@ -107,38 +122,33 @@
 
 <div class="document">
 
+    <!-- Header -->
     <header class="header">
-        <table class="header-table">
-            <tr>
-                <td class="header-text">
-                    <div class="org-name" th:text="${orgName}"></div>
-                    <div class="branch" th:text="${branch}"></div>
-                </td>
-                <td class="header-logo">
-                    <img src="logo-onan.jpg" alt="شعار الهيئة"/>
-                </td>
-            </tr>
-        </table>
+        <img src="logo-onan.jpg" alt="شعار الهيئة"/>
+        <div class="org-name" th:text="${orgName}"></div>
+        <div class="branch" th:text="${branch}"></div>
     </header>
 
-    <section class="section">
-        <p>
-            <span th:text="${dateLabel}"></span>
-            <span class="field-date" th:text="${date}"></span>
-        </p>
-    </section>
-
+    <!-- Date -->
+    <!-- Date -->
+    <div class="doc-ref">
+            <span class="doc-ref-pill">
+                <span th:text="${dateLabel}">نابل في:</span>&#160;
+                <strong th:text="${date}">__/__/____</strong>
+            </span>
+    </div>
+    <!-- Lawyer Info -->
     <section class="section">
         <p>
             <span th:text="${lawyerLabel}"></span>
-            <strong><span class="field field-long" th:text="${avocatNom}"></span></strong><br/>
-
+            <span class="field field-long" th:text="${avocatNom}"></span><br/>
             <span th:text="${registrationLabel}"></span>
             <span class="field" th:text="${avocatId}"></span>
             <span th:text="${traineeLawyer}"></span>
         </p>
     </section>
 
+    <!-- Address -->
     <section class="section">
         <p>
             <span th:text="${addressLabel}"></span>
@@ -146,17 +156,16 @@
         </p>
     </section>
 
+    <!-- Greeting -->
     <section class="section greeting">
         <p th:text="${greeting}"></p>
     </section>
 
-
-
+    <!-- Case Info -->
     <section class="section">
         <p>
             <span th:text="${forLabel}"></span>
-            <strong><span class="field field-long" th:text="${affaireNomAccuse}"></span></strong><br/>
-
+            <span class="field field-long" th:text="${affaireNomAccuse}"></span><br/>
             <span th:text="${againstLabel}"></span>
             <span class="field field-long"></span>
         </p>
@@ -166,7 +175,6 @@
         <p>
             <span th:text="${caseLabel}"></span>
             <span class="field" th:text="${affaireNumero}"></span><br/>
-
             <span th:text="${sessionLabel}"></span>
             <span class="field field-long" th:text="${#temporals.format(dateTribunal, 'dd/MM/yyyy')}"></span>
         </p>
@@ -176,39 +184,53 @@
         <p th:text="${closing}"></p>
     </section>
 
+    <!-- Signature -->
     <div class="signature-block">
         <p><strong th:text="${presidentLabel}"></strong></p>
         <p>
             <span th:text="${signatureLabel}"></span>
-            <span class="signature-line"></span>
-        </p>
+            <img src="signature.png" class="signature-image" alt="التوقيع"/>
+        </p> <!-- ← ADD THIS -->
     </div>
 
+
+    <!-- Scissor + Dotted separator -->
+    <div class="witness-separator">
+        <div class="dotted-line"></div>
+    </div>
+
+    <!-- Compact Witness Block -->
     <div class="witness-block">
         <p>
             <span th:text="${witnessPrefix}"></span>
             <span class="field field-long" th:text="${avocatNom}"></span>
-            <span th:text="${traineeLawyer}"></span><br/>
-
+            <span th:text="${traineeLawyer}"></span>
+        </p>
+        <p>
             <span th:text="${receivedLabel}"></span>
-            <span class="field-date" th:text="${date}"></span><br/>
+            <span class="field-date" th:text="${date}"></span>
+            <span th:text="${witnessText}"></span>
 
+        </p>
+        <p>
             <span th:text="${underNumberLabel}"></span>
             <span class="field" th:text="${affaireNumero}"></span>
             <span th:text="${onBehalfLabel}"></span>
-            <span class="field" th:text="${affaireNomAccuse}"></span><br/>
-
+            <span class="field" th:text="${affaireNomAccuse}"></span>
+        </p>
+        <p>
             <span th:text="${caseNumberLabel}"></span>
-            <span class="field" th:text="${affaireNumero}"></span><br/>
-
+            <span class="field" th:text="${affaireNumero}"></span>
+        </p>
+        <p>
             <span th:text="${sessionDayLabel}"></span>
-            <span class="field" th:text="${#temporals.format(dateTribunal, 'dd/MM/yyyy')}"></span><br/>
-
+            <span class="field" th:text="${#temporals.format(dateTribunal, 'dd/MM/yyyy')}"></span>
+        </p>
+        <p>
             <span th:text="${courtLabel}"></span>
             <span class="field field-long" th:text="${affaireType}"></span>
         </p>
-
-        <p style="margin-top: 1rem;">
+        <p style="text-align: center;margin-top:0.5rem;">
             <span th:text="${signatureLabel}"></span>
             <span class="signature-line"></span>
         </p>

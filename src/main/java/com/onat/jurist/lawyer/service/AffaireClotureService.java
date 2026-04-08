@@ -22,16 +22,23 @@ public class AffaireClotureService {
     @Transactional
     public void updateAffairesCloturees() {
         LocalDateTime now = LocalDateTime.now();
-        List<Affaire> affaires = affaireRepository.findAll()
-                .stream()
-                .filter(a -> a.getDateTribunal() != null && a.getStatut() != StatutAffaire.CLOTUREE)
-                .toList();
+        LocalDateTime endOfToday = now.toLocalDate().atTime(23, 59, 59);
+
+        List<Affaire> affaires = affaireRepository
+                .findByDateTribunalBeforeAndStatutNot(endOfToday, StatutAffaire.CLOTUREE);
+
 
         for (Affaire affaire : affaires) {
-            if (affaire.getDateTribunal().isBefore(now)) {
+            log.info("Now: {}", now);
+            log.info("Affaire dateTribunal: {}", affaire.getDateTribunal());
+            if (affaire.getDateTribunal().toLocalDate().isBefore(now.toLocalDate())
+                    || affaire.getDateTribunal().toLocalDate().isEqual(now.toLocalDate())) {
+
                 affaire.setStatut(StatutAffaire.CLOTUREE);
                 log.info("🔒 Affaire '{}' (id: {}) marked as CLOTURE", affaire.getTitre(), affaire.getId());
+
             }
+
         }
 
         affaireRepository.saveAll(affaires);

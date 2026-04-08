@@ -1,5 +1,7 @@
 package com.onat.jurist.lawyer.service;
 
+import com.ibm.icu.text.ArabicShaping;
+import com.ibm.icu.text.Bidi;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import com.onat.jurist.lawyer.dto.in.AvocatRequest;
@@ -113,11 +115,20 @@ public class AvocatService {
         List<Avocat> avocats = avocatRepository.findAll();
 
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Liste Avocats");
+            Sheet sheet = workbook.createSheet("قائمة المحامين");
 
             // Header
             Row header = sheet.createRow(0);
-            String[] columns = {"Identifiant", "Prénom", "Nom", "Email", "Téléphone", "Région", "Adresse", "Date Inscription"};
+            String[] columns = {
+                    " عدد الترسيم",        // Identifiant
+                    "الاسم",   // Prénom
+                    "اللقب",         // Nom
+                    "البريد الإلكتروني", // Email
+                    "الهاتف",       // Téléphone
+                    "المنطقة",      // Région
+                    "العنوان",      // Adresse
+                    "تاريخ التسجيل" // Date Inscription
+            };
 
             for (int i = 0; i < columns.length; i++) {
                 Cell cell = header.createCell(i);
@@ -195,28 +206,32 @@ public class AvocatService {
             Image logo = loadLogo();
             PdfPTable headerTable = new PdfPTable(2);
             headerTable.setWidthPercentage(100);
-            headerTable.setWidths(new int[]{1, 4});
+            headerTable.setWidths(new int[]{4, 1}); // swap column widths if needed
 
-            PdfPCell logoCell = (logo != null) ? new PdfPCell(logo) : new PdfPCell();
-            logoCell.setBorder(Rectangle.NO_BORDER);
-            logoCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-            logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-
-            Paragraph titleText = new Paragraph("ORDRE NATIONAL DES AVOCATS DE TUNISIE", arabicTitleFont);
+// Title cell first (on the left)
+            Paragraph titleText = new Paragraph(fixArabic("الهيئة الوطنية للمحامين بتونس فرع نابل"), arabicTitleFont);
             titleText.setAlignment(Element.ALIGN_CENTER);
-
             PdfPCell titleCell = new PdfPCell(titleText);
             titleCell.setBorder(Rectangle.NO_BORDER);
             titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
             titleCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-            headerTable.addCell(logoCell);
+// Logo cell second (on the right)
+            PdfPCell logoCell = (logo != null) ? new PdfPCell(logo) : new PdfPCell();
+            logoCell.setBorder(Rectangle.NO_BORDER);
+            logoCell.setHorizontalAlignment(Element.ALIGN_RIGHT); // align to right
+            logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
             headerTable.addCell(titleCell);
+            headerTable.addCell(logoCell);
 
             document.add(headerTable);
 
-            // ------------------- SUBTITLE ---------------------
-            Paragraph subtitle = new Paragraph("Liste des Avocats - Export généré automatiquement: " + LocalDate.now(), arabicFontBold);
+            // ------------------- SUBSUBTITLE ---------------------
+            Paragraph subtitle = new Paragraph(
+                    fixArabic("قائمة المحامين - تم إنشاء الملف تلقائيًا بتاريخ" + LocalDate.now()),
+                    arabicFontBold
+            );
             subtitle.setAlignment(Element.ALIGN_CENTER);
             subtitle.setSpacingAfter(15);
             document.add(subtitle);
@@ -228,8 +243,17 @@ public class AvocatService {
             table.setWidths(new float[]{30f, 25f, 25f, 35f, 25f, 25f, 30f, 35f});
             table.setRunDirection(PdfWriter.RUN_DIRECTION_RTL); // RTL support
 
-            // Table headers
-            String[] headers = {"Inscription", "Adresse", "Région", "N°Tél", "Email", "Nom", "Prénom", "Identifiant"};
+            // Table headers in Arabic
+            String[] headers = {
+                    " عدد الترسيم",        // Identifiant
+                    "الاسم",   // Prénom
+                    "اللقب",         // Nom
+                    "البريد الإلكتروني", // Email
+                    "الهاتف",       // Téléphone
+                    "العنوان",
+                    "المنطقة",        // Région
+                    "تاريخ التسجيل" // Date Inscription
+            };
             for (String h : headers) {
                 PdfPCell cell = new PdfPCell(new Phrase(h, arabicFontBold));
                 cell.setBackgroundColor(new java.awt.Color(230, 230, 230));
@@ -292,7 +316,7 @@ public class AvocatService {
         return avocatRepository.findAll()
                 .stream()
                 .map(a -> new LawyerWorkloadDTO(a.getId(), a.getNom(), a.getAffaires().size(), a.getAffairesAcceptees(), a.getAffairesRefusees()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<LawyerResponseRateDTO> getLawyerResponseRates() {
@@ -303,7 +327,7 @@ public class AvocatService {
                     double rate = total > 0 ? ((double) a.getAffairesAcceptees() / total) * 100 : 0;
                     return new LawyerResponseRateDTO(a.getId(), a.getNom(), rate);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Map<String, Long> countLawyersByRegion() {
@@ -321,5 +345,18 @@ public class AvocatService {
                 ));
     }
 
+    public String fixArabic(String text) {
+        try {
+            // Step 1: shape Arabic letters
+            ArabicShaping shaping = new ArabicShaping(ArabicShaping.LETTERS_SHAPE |
+                    ArabicShaping.TEXT_DIRECTION_LOGICAL);
+            String shaped = shaping.shape(text);
 
+            // Step 2: apply right-to-left reordering
+            Bidi bidi = new Bidi(shaped, Bidi.DIRECTION_RIGHT_TO_LEFT);
+            return bidi.writeReordered(Bidi.DO_MIRRORING);
+        } catch (Exception e) {
+            return text; // fallback if something goes wrong
+        }
+    }
 }

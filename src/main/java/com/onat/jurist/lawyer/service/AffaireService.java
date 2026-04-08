@@ -276,7 +276,7 @@ public class AffaireService {
     }
 
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void markAffairesAsClosed() {
         affaireClotureService.updateAffairesCloturees();
     }

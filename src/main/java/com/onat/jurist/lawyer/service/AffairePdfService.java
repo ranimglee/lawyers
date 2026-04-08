@@ -3,6 +3,7 @@ package com.onat.jurist.lawyer.service;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.Bidi;
 import com.onat.jurist.lawyer.entity.Affaire;
+import com.onat.jurist.lawyer.entity.SousTypeAffaire;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,8 +11,10 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -26,17 +29,15 @@ public class AffairePdfService {
             context.setVariable("affaireNomAccuse", fixArabic(affaire.getNomAccuse()));
             context.setVariable("affaireNumero", affaire.getNumero());
             context.setVariable("avocatId", affaire.getAvocatAssigne().getIdentifiant());
-             context.setVariable("affaireType", affaire.getSousType());
-             context.setVariable("dateTribunal", affaire.getDateTribunal());
-            context.setVariable("avocatNom", fixArabic(affaire.getAvocatAssigne().getNom()+" "+affaire.getAvocatAssigne().getPrenom()));
+            context.setVariable("affaireType", fixArabic(translateSousType(affaire.getSousType())));             context.setVariable("dateTribunal", affaire.getDateTribunal());
+            context.setVariable("avocatNom", fixArabic(affaire.getAvocatAssigne().getPrenom()+" "+affaire.getAvocatAssigne().getNom()));
             context.setVariable("avocatAdresse", fixArabic(affaire.getAvocatAssigne().getAdresse()));
             context.setVariable("date", LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
             // ✅ Preprocess static Arabic phrases
             context.setVariable("greeting", fixArabic("حضرة الزميل المحترم،\nلي الشرف أن أعلمكم بأني عينتكم للدفاع:"));
             context.setVariable("closing",
-                    fixArabic("لذا فالرجاء القيام بإعلامي على أحسن وجه، وفي الختام، تقبلوا فائق اعتباراتي والسلام."));
-            context.setVariable("witnessText",
-                    fixArabic("يشهد الأستاذ(ة): %s المحامي المتمرن أنه توصل بتاريخ: %s بالتسخير المضمن لدى كتابة الفرع الجهوي للمحامين بنابل."));
+                    fixArabic("لذا فرجاء القيام بواجبكم المهني على أحسن وجه وفي الختام تقبلوا فائق اعتبارتي والسلام."));
+            context.setVariable("witnessText",fixArabic("بالتسخير المضمن لدى كتابة الفرع الجهوي للمحامين بنابل."));
             context.setVariable("orgName", fixArabic("الهيئة الوطنية للمحامين"));
             context.setVariable("branch", fixArabic("الفرع الجهوي للمحامين بنابل"));
 
@@ -61,6 +62,7 @@ public class AffairePdfService {
             context.setVariable("caseNumberLabel", fixArabic("في القضية عدد:"));
             context.setVariable("sessionDayLabel", fixArabic("المعينة لجلسة يوم:"));
             context.setVariable("courtLabel", fixArabic("بمحكمة:"));
+
             // 2️⃣ Generate HTML using Thymeleaf template
             String html = templateEngine.process("affaire-pdf", context);
 
@@ -69,6 +71,8 @@ public class AffairePdfService {
             builder.useFastMode();
             builder.withHtmlContent(html, null);
             builder.withHtmlContent(html, getClass().getClassLoader().getResource("images/logo-onan.jpg").toExternalForm());
+            builder.withHtmlContent(html, getClass().getClassLoader().getResource("images/signature.png").toExternalForm());
+
             // ⚡ Embed Arabic font
             builder.useFont(() -> getClass().getClassLoader()
                             .getResourceAsStream("fonts/NotoNaskhArabic-Regular.ttf"),
@@ -103,6 +107,31 @@ public class AffairePdfService {
             return text;
         } catch (Exception e) {
             return text;
+        }
+    }
+
+    private String translateSousType(SousTypeAffaire sousType) {
+        if (sousType == null) return "";
+
+        switch (sousType) {
+            // CRIMINEL
+            case TRIBUNAL_PREMIERE_INSTANCE_NABEUL:
+                return "المحكمة الابتدائية بنابل";
+            case TRIBUNAL_PREMIERE_INSTANCE_GROMBALIA:
+                return "المحكمة الابتدائية بقرنبالية";
+            case COUR_APPEL_NABEUL:
+                return "محكمة الاستئناف بنابل";
+
+            // ENQUETE
+            case NABEUL:
+                return "نابل";
+            case ZAGHOUAN:
+                return "زغوان";
+            case GROMBALIA:
+                return "قرنبالية";
+
+            default:
+                return sousType.name(); // fallback
         }
     }
 }
